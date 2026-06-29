@@ -38,4 +38,12 @@ export const reportService = {
   // Wage ledger
   getWageLedger: (params = {}) =>
     api.get('/api/finances/wages/', { params }).then((r) => r.data.result),
+
+  // Single bill detail
+  getBillDetail: (billId) =>
+    api.get(`/api/finances/bills/${billId}/`).then((r) => r.data.result),
+
+  // Single wage summary detail
+  getWageDetail: (summaryId) =>
+    api.get(`/api/finances/wages/${summaryId}/`).then((r) => r.data.result),
 }

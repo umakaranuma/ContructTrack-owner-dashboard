@@ -48,3 +48,19 @@ export function useWageLedger(params = {}) {
     queryFn: () => reportService.getWageLedger(params),
   })
 }
+
+export function useBillDetail(billId) {
+  return useQuery({
+    queryKey: ['bill-detail', billId],
+    queryFn: () => reportService.getBillDetail(billId),
+    enabled: !!billId,
+  })
+}
+
+export function useWageDetail(summaryId) {
+  return useQuery({
+    queryKey: ['wage-detail', summaryId],
+    queryFn: () => reportService.getWageDetail(summaryId),
+    enabled: !!summaryId,
+  })
+}

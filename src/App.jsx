@@ -19,6 +19,8 @@ import Sites from './pages/Sites'
 import SiteDetail from './pages/SiteDetail'
 import Managers from './pages/Managers'
 import Finances from './pages/Finances'
+import BillDetail from './pages/BillDetail'
+import WageDetail from './pages/WageDetail'
 import Reports from './pages/Reports'
 import Settings from './pages/Settings'
 
@@ -60,6 +62,8 @@ export default function App() {
         <Route path="sites/:siteId" element={<SiteDetail />} />
         <Route path="managers" element={<Managers />} />
         <Route path="finances" element={<Finances />} />
+        <Route path="finances/bills/:billId" element={<BillDetail />} />
+        <Route path="finances/wages/:wageId" element={<WageDetail />} />
         <Route path="reports" element={<Reports />} />
         <Route path="settings" element={<Settings />} />
       </Route>

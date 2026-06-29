@@ -4,10 +4,11 @@ import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   PieChart, Pie, Cell, Legend,
 } from 'recharts'
-import { useSite, useDailyLogs, useAttendance, useBills, useProgressPhotos, useSiteAlerts, useAcknowledgeAlert, useResolveAlert } from '../hooks/useSites'
+import { useSite, useDailyLogs, useAttendance, useBills, useProgressPhotos, useSiteAlerts, useAcknowledgeAlert, useResolveAlert, useUpdateSite } from '../hooks/useSites'
 import StageStepper from '../components/sites/StageStepper'
 import BillPhotoGrid from '../components/sites/BillPhotoGrid'
 import ProgressPhotoWall from '../components/sites/ProgressPhotoWall'
+import DailyLogDetail from '../components/sites/DailyLogDetail'
 import { StageBadge } from '../components/ui/Badge'
 import Badge from '../components/ui/Badge'
 import { PageLoader } from '../components/ui/LoadingSpinner'
@@ -91,9 +92,11 @@ function BudgetTooltip({ active, payload, label }) {
 export default function SiteDetail() {
   const { siteId } = useParams()
   const [activeTab, setActiveTab] = useState('overview')
+  const [selectedLog, setSelectedLog] = useState(null)
 
   // API hooks — fall back to dummy data
   const { data: siteData, isLoading: siteLoading } = useSite(siteId)
+  const updateSite = useUpdateSite(siteId)
   const { data: logsData, isLoading: logsLoading }       = useDailyLogs(siteId)
   const { data: attendanceData, isLoading: attLoading }  = useAttendance(siteId)
   const { data: billsData, isLoading: billsLoading }     = useBills(siteId)
@@ -161,7 +164,11 @@ export default function SiteDetail() {
       {/* ── Tab: Overview ── */}
       {activeTab === 'overview' && (
         <div className="space-y-6">
-          <StageStepper currentStage={site.stage} />
+          <StageStepper
+            currentStage={site.stage ?? site.current_stage}
+            onUpdateStage={(stage) => updateSite.mutate({ current_stage: stage })}
+            isUpdating={updateSite.isPending}
+          />
 
           <div className="grid grid-cols-2 gap-6">
             {/* Budget vs Actual */}
@@ -259,11 +266,19 @@ export default function SiteDetail() {
                 { key: 'materials_out', label: 'Materials Out', render: v => <span className="font-mono text-amber-400 text-sm">{v} items</span> },
                 { key: 'workers',     label: 'Workers Present', render: v => <span className="font-mono text-offwhite text-sm">{v}</span> },
                 { key: 'total_wage',  label: 'Total Wage',      render: v => <span className="font-mono text-gold text-sm font-semibold">{formatLKR(v)}</span> },
-                { key: 'id', label: '', render: () => <button className="text-xs text-muted hover:text-gold transition-colors">Details →</button> },
+                { key: 'id', label: '', render: (_, row) => (
+                  <button
+                    onClick={(e) => { e.stopPropagation(); setSelectedLog(row) }}
+                    className="text-xs text-muted hover:text-gold transition-colors"
+                  >
+                    Details →
+                  </button>
+                )},
               ]}
               data={logs}
               isLoading={logsLoading}
               keyField="id"
+              onRowClick={(row) => setSelectedLog(row)}
               emptyTitle="No daily logs"
               emptyDescription="Managers submit logs through the mobile app."
             />
@@ -357,6 +372,7 @@ export default function SiteDetail() {
           )}
         </div>
       )}
+      <DailyLogDetail log={selectedLog} onClose={() => setSelectedLog(null)} />
     </div>
   )
 }

@@ -2,6 +2,8 @@
 // Status/label pill badge. Variants map to semantic colours.
 // ─────────────────────────────────────────────────────────────────────────────
 
+import { stageLabel } from '../../constants/stages'
+
 const VARIANTS = {
   gold:      'bg-gold/15 text-gold border border-gold/30',
   success:   'bg-green-500/15 text-green-400 border border-green-500/30',
@@ -36,21 +38,21 @@ export function StatusDot({ color = 'green' }) {
   )
 }
 
-// Stage badge — maps construction stage names to colours
+// Stage badge — maps construction stage slugs to display labels and colours
 const STAGE_COLORS = {
-  'Foundation':   'gold',
-  'Columns':      'info',
-  'Slab':         'purple',
-  'Brickwork':    'warning',
-  'Roofing':      'success',
-  'Plastering':   'muted',
-  'Electrical':   'info',
-  'Plumbing':     'warning',
-  'Finishing':    'success',
-  'Handover':     'gold',
+  excavation:  'muted',
+  foundation:  'gold',
+  ground_slab: 'info',
+  columns:     'info',
+  beams:       'purple',
+  upper_slab:  'purple',
+  walls:       'warning',
+  roof:        'success',
+  finishing:   'success',
+  completed:   'gold',
 }
 
 export function StageBadge({ stage }) {
   const variant = STAGE_COLORS[stage] || 'muted'
-  return <Badge variant={variant}>{stage}</Badge>
+  return <Badge variant={variant}>{stageLabel(stage)}</Badge>
 }
