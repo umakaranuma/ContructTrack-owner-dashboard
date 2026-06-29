@@ -1,0 +1,132 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  * {
+    box-sizing: border-box;
+  }
+
+  body {
+    @apply bg-navy-primary text-offwhite font-inter;
+    font-size: 14px;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-syne;
+  }
+
+  /* Custom scrollbar */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  ::-webkit-scrollbar-track {
+    background: #0A1628;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: #1A3356;
+    border-radius: 3px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: #C9A84C;
+  }
+}
+
+@layer components {
+  /* ── Bridge aliases used by pages ────────────────────────────────────────── */
+  /* My new pages use these shorter class names; map to the existing design. */
+  .btn-primary  { @apply bg-gold hover:bg-gold-light text-navy-primary font-semibold px-4 py-2 rounded-lg transition-colors text-sm disabled:opacity-50 disabled:cursor-not-allowed; }
+  .btn-outline  { @apply border border-navy-light hover:border-gold/50 text-muted hover:text-offwhite px-4 py-2 rounded-lg transition-colors text-sm; }
+  .input-field  { @apply bg-navy-primary border border-navy-light rounded-lg px-3 py-2 text-offwhite placeholder-muted/60 text-sm focus:outline-none focus:border-gold/60 transition-colors; }
+  .form-label   { @apply text-muted text-xs font-medium uppercase tracking-wider mb-1 block; }
+  .page-title   { @apply font-syne font-bold text-2xl text-offwhite; }
+  .modal-overlay { @apply fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4; }
+  .modal-box    { @apply bg-navy-secondary rounded-2xl border border-navy-light p-6 shadow-2xl overflow-y-auto; max-height: 90vh; }
+  /* ────────────────────────────────────────────────────────────────────────── */
+
+  /* Gold bordered card */
+  .card-gold {
+    @apply bg-navy-secondary border border-gold/30 rounded-xl;
+  }
+
+  /* Standard card */
+  .card {
+    @apply bg-navy-secondary border border-navy-light rounded-xl;
+  }
+
+  /* Gold button */
+  .btn-gold {
+    @apply bg-gold hover:bg-gold-light text-navy-primary font-semibold px-4 py-2 rounded-lg transition-colors duration-150 text-sm;
+  }
+
+  /* Ghost button */
+  .btn-ghost {
+    @apply border border-navy-light hover:border-gold/50 text-muted hover:text-offwhite px-4 py-2 rounded-lg transition-colors duration-150 text-sm;
+  }
+
+  /* Danger button */
+  .btn-danger {
+    @apply bg-red-500/10 hover:bg-red-500/20 border border-red-500/30 text-red-400 hover:text-red-300 px-4 py-2 rounded-lg transition-colors duration-150 text-sm;
+  }
+
+  /* Input */
+  .input {
+    @apply bg-navy-primary border border-navy-light rounded-lg px-3 py-2 text-offwhite placeholder-muted/60 text-sm focus:outline-none focus:border-gold/60 transition-colors;
+    width: 100%;
+  }
+
+  /* Select */
+  .select {
+    @apply bg-navy-primary border border-navy-light rounded-lg px-3 py-2 text-offwhite text-sm focus:outline-none focus:border-gold/60 transition-colors appearance-none;
+    width: 100%;
+  }
+
+  /* Monospaced number */
+  .num {
+    @apply font-mono;
+  }
+
+  /* Table styles */
+  .data-table th {
+    @apply text-muted text-xs font-semibold uppercase tracking-wider px-4 py-3 text-left border-b border-navy-light;
+  }
+  .data-table td {
+    @apply px-4 py-3 border-b border-navy-light/50 text-sm;
+  }
+  .data-table tr:last-child td {
+    @apply border-b-0;
+  }
+  .data-table tbody tr:hover td {
+    @apply bg-navy-light/20;
+  }
+
+  /* Label */
+  .label {
+    @apply text-muted text-xs font-medium uppercase tracking-wider mb-1 block;
+  }
+
+  /* Section heading */
+  .section-title {
+    @apply font-syne font-semibold text-lg text-offwhite;
+  }
+}
+
+@layer utilities {
+  .text-gold { color: #C9A84C; }
+  .border-gold { border-color: #C9A84C; }
+  .bg-gold { background-color: #C9A84C; }
+
+  /* Progress bar fill animation */
+  .progress-fill {
+    transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  /* Glow effect on gold elements */
+  .glow-gold {
+    box-shadow: 0 0 20px rgba(201, 168, 76, 0.15);
+  }
+}
