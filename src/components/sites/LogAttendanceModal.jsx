@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import Modal from '../ui/Modal'
 import LoadingSpinner from '../ui/LoadingSpinner'
 import { useSiteWorkers, useSubmitAttendance, useCreateWorker } from '../../hooks/useSites'
@@ -37,11 +37,15 @@ export default function LogAttendanceModal({
   const [showAddWorker, setShowAddWorker] = useState(false)
   const [newWorker, setNewWorker] = useState(EMPTY_WORKER)
   const [addError, setAddError] = useState('')
+  const initializedRef = useRef(false)
 
   const workers = Array.isArray(workersData) ? workersData : workersData?.results ?? []
 
   useEffect(() => {
-    if (!isOpen) return
+    if (!isOpen) {
+      initializedRef.current = false
+      return
+    }
     setError('')
     setAddError('')
     setSearch('')
@@ -50,29 +54,63 @@ export default function LogAttendanceModal({
     setLogDate(defaultDate || new Date().toISOString().slice(0, 10))
   }, [isOpen, defaultDate])
 
+  // Initialize once per open — do not reset on every workers refetch (fixes checkbox toggling)
   useEffect(() => {
-    if (!isOpen || isLoading) return
+    if (!isOpen || isLoading || initializedRef.current) return
+    if (!workers.length && !(existingAttendance?.length)) return
 
     const existingByWorker = Object.fromEntries(
-      (existingAttendance || []).map((r) => [r.worker_id, r]),
+      (existingAttendance || []).map((r) => [String(r.worker_id), r]),
     )
 
     const nextRecords = {}
     const nextIncluded = {}
 
     for (const w of workers) {
-      const ex = existingByWorker[w.id]
-      nextRecords[w.id] = {
+      const wid = String(w.id)
+      const ex = existingByWorker[wid]
+      nextRecords[wid] = {
         status: ex?.status ?? 'present',
         overtime_hours: ex?.overtime_hours ?? 0,
       }
-      // Only pre-select workers already marked for this day
-      nextIncluded[w.id] = !!ex
+      nextIncluded[wid] = !!ex
     }
 
     setRecords(nextRecords)
     setIncluded(nextIncluded)
+    initializedRef.current = true
   }, [workers, isOpen, isLoading, existingAttendance])
+
+  // Merge newly added workers without resetting manual selections
+  useEffect(() => {
+    if (!isOpen || isLoading || !initializedRef.current) return
+
+    setRecords((prev) => {
+      const next = { ...prev }
+      let changed = false
+      for (const w of workers) {
+        const wid = String(w.id)
+        if (!next[wid]) {
+          next[wid] = { status: 'present', overtime_hours: 0 }
+          changed = true
+        }
+      }
+      return changed ? next : prev
+    })
+
+    setIncluded((prev) => {
+      const next = { ...prev }
+      let changed = false
+      for (const w of workers) {
+        const wid = String(w.id)
+        if (!(wid in next)) {
+          next[wid] = false
+          changed = true
+        }
+      }
+      return changed ? next : prev
+    })
+  }, [workers, isOpen, isLoading])
 
   const filteredWorkers = useMemo(() => {
     const q = search.trim().toLowerCase()
@@ -82,14 +120,14 @@ export default function LogAttendanceModal({
     )
   })
 
-  const includedWorkers = workers.filter((w) => included[w.id])
+  const includedWorkers = workers.filter((w) => included[String(w.id)])
 
   const summary = useMemo(() => {
     let present = 0
     let half = 0
     let absent = 0
     for (const w of includedWorkers) {
-      const st = records[w.id]?.status ?? 'present'
+      const st = records[String(w.id)]?.status ?? 'present'
       if (st === 'present') present += 1
       else if (st === 'half') half += 1
       else absent += 1
@@ -98,24 +136,64 @@ export default function LogAttendanceModal({
   }, [includedWorkers, records])
 
   const setWorker = (id, field, val) => {
-    setRecords((r) => ({ ...r, [id]: { ...r[id], [field]: val } }))
-    setIncluded((inc) => ({ ...inc, [id]: true }))
+    const wid = String(id)
+    setRecords((r) => ({ ...r, [wid]: { ...r[wid], status: r[wid]?.status ?? 'present', overtime_hours: r[wid]?.overtime_hours ?? 0, [field]: val } }))
+    setIncluded((inc) => ({ ...inc, [wid]: true }))
   }
 
   const toggleInclude = (id) => {
-    setIncluded((inc) => ({ ...inc, [id]: !inc[id] }))
+    const wid = String(id)
+    setIncluded((inc) => ({ ...inc, [wid]: !inc[wid] }))
   }
 
-  const markAll = (status) => {
+  const targetWorkers = search.trim() ? filteredWorkers : workers
+
+  const isBulkActive = (status) => {
+    if (!targetWorkers.length) return false
+    return targetWorkers.every((w) => {
+      const wid = String(w.id)
+      return included[wid] && (records[wid]?.status ?? 'present') === status
+    })
+  }
+
+  const toggleBulk = (status) => {
+    if (isBulkActive(status)) {
+      const nextInc = { ...included }
+      for (const w of targetWorkers) {
+        nextInc[String(w.id)] = false
+      }
+      setIncluded(nextInc)
+      return
+    }
+
     const next = { ...records }
     const nextInc = { ...included }
-    for (const w of workers) {
-      next[w.id] = { ...next[w.id], status, overtime_hours: next[w.id]?.overtime_hours ?? 0 }
-      nextInc[w.id] = true
+    for (const w of targetWorkers) {
+      const wid = String(w.id)
+      next[wid] = { ...next[wid], status, overtime_hours: next[wid]?.overtime_hours ?? 0 }
+      nextInc[wid] = true
     }
     setRecords(next)
     setIncluded(nextInc)
   }
+
+  const clearSelection = () => {
+    const nextInc = { ...included }
+    for (const w of workers) {
+      nextInc[String(w.id)] = false
+    }
+    setIncluded(nextInc)
+  }
+
+  const selectAll = () => {
+    const nextInc = { ...included }
+    for (const w of targetWorkers) {
+      nextInc[String(w.id)] = true
+    }
+    setIncluded(nextInc)
+  }
+
+  const allTargetSelected = targetWorkers.length > 0 && targetWorkers.every((w) => included[String(w.id)])
 
   const handleAddWorker = async (e) => {
     e.preventDefault()
@@ -139,8 +217,9 @@ export default function LogAttendanceModal({
       await refetch()
       const id = created?.id
       if (id) {
-        setRecords((r) => ({ ...r, [id]: { status: 'present', overtime_hours: 0 } }))
-        setIncluded((inc) => ({ ...inc, [id]: true }))
+        const wid = String(id)
+        setRecords((r) => ({ ...r, [wid]: { status: 'present', overtime_hours: 0 } }))
+        setIncluded((inc) => ({ ...inc, [wid]: true }))
       }
       setNewWorker(EMPTY_WORKER)
       setShowAddWorker(false)
@@ -152,7 +231,7 @@ export default function LogAttendanceModal({
   const handleSubmit = async (e) => {
     e.preventDefault()
     setError('')
-    const selected = workers.filter((w) => included[w.id])
+    const selected = workers.filter((w) => included[String(w.id)])
     if (!selected.length) {
       setError('Select at least one worker for this day, or add a new worker.')
       return
@@ -162,8 +241,8 @@ export default function LogAttendanceModal({
       is_rain_day: isRainDay,
       records: selected.map((w) => ({
         worker_id: w.id,
-        status: records[w.id]?.status ?? 'present',
-        overtime_hours: Number(records[w.id]?.overtime_hours ?? 0),
+        status: records[String(w.id)]?.status ?? 'present',
+        overtime_hours: Number(records[String(w.id)]?.overtime_hours ?? 0),
       })),
     }
     try {
@@ -207,12 +286,23 @@ export default function LogAttendanceModal({
             />
             Rain day (reduced work)
           </label>
-          <div className="flex gap-2 ml-auto">
-            <button type="button" className="btn-ghost text-xs" onClick={() => markAll('present')}>
-              All present
+          <div className="flex flex-wrap gap-2 ml-auto">
+            <button
+              type="button"
+              className={`btn-ghost text-xs ${isBulkActive('present') ? 'text-gold border-gold/40' : ''}`}
+              onClick={() => toggleBulk('present')}
+            >
+              {isBulkActive('present') ? 'Undo all present' : 'All present'}
             </button>
-            <button type="button" className="btn-ghost text-xs" onClick={() => markAll('absent')}>
-              All absent
+            <button
+              type="button"
+              className={`btn-ghost text-xs ${isBulkActive('absent') ? 'text-gold border-gold/40' : ''}`}
+              onClick={() => toggleBulk('absent')}
+            >
+              {isBulkActive('absent') ? 'Undo all absent' : 'All absent'}
+            </button>
+            <button type="button" className="btn-ghost text-xs" onClick={allTargetSelected ? clearSelection : selectAll}>
+              {allTargetSelected ? 'Clear all' : 'Select all'}
             </button>
           </div>
         </div>
@@ -321,18 +411,20 @@ export default function LogAttendanceModal({
                 </thead>
                 <tbody>
                   {filteredWorkers.map((w) => {
-                    const isOn = included[w.id]
+                    const wid = String(w.id)
+                    const isOn = !!included[wid]
                     return (
                       <tr
-                        key={w.id}
-                        className={`border-t border-navy-light/50 transition-colors ${isOn ? '' : 'opacity-45'}`}
+                        key={wid}
+                        className={`border-t border-navy-light/50 transition-colors cursor-pointer ${isOn ? '' : 'opacity-45'}`}
+                        onClick={() => toggleInclude(wid)}
                       >
-                        <td className="px-3 py-3">
+                        <td className="px-3 py-3" onClick={(e) => e.stopPropagation()}>
                           <input
                             type="checkbox"
-                            checked={!!isOn}
-                            onChange={() => toggleInclude(w.id)}
-                            className="rounded"
+                            checked={isOn}
+                            onChange={() => toggleInclude(wid)}
+                            className="rounded cursor-pointer"
                             aria-label={`Include ${w.full_name}`}
                           />
                         </td>
@@ -340,27 +432,27 @@ export default function LogAttendanceModal({
                           <p className="text-offwhite font-medium">{w.full_name}</p>
                           <p className="text-muted text-xs capitalize">{w.role?.replace(/_/g, ' ')}</p>
                         </td>
-                        <td className="px-3 py-3">
+                        <td className="px-3 py-3" onClick={(e) => e.stopPropagation()}>
                           <select
                             className="select text-xs"
                             disabled={!isOn}
-                            value={records[w.id]?.status ?? 'present'}
-                            onChange={(e) => setWorker(w.id, 'status', e.target.value)}
+                            value={records[wid]?.status ?? 'present'}
+                            onChange={(e) => setWorker(wid, 'status', e.target.value)}
                           >
                             {STATUS_OPTIONS.map((s) => (
                               <option key={s.value} value={s.value}>{s.label}</option>
                             ))}
                           </select>
                         </td>
-                        <td className="px-3 py-3">
+                        <td className="px-3 py-3" onClick={(e) => e.stopPropagation()}>
                           <input
                             type="number"
                             step="0.5"
                             min="0"
                             disabled={!isOn}
                             className="input w-16 text-xs"
-                            value={records[w.id]?.overtime_hours ?? 0}
-                            onChange={(e) => setWorker(w.id, 'overtime_hours', e.target.value)}
+                            value={records[wid]?.overtime_hours ?? 0}
+                            onChange={(e) => setWorker(wid, 'overtime_hours', e.target.value)}
                           />
                         </td>
                         <td className="px-3 py-3 text-right font-mono text-muted text-xs hidden sm:table-cell">
