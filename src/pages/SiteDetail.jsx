@@ -9,9 +9,12 @@ import StageStepper from '../components/sites/StageStepper'
 import BillPhotoGrid from '../components/sites/BillPhotoGrid'
 import ProgressPhotoWall from '../components/sites/ProgressPhotoWall'
 import DailyLogDetail from '../components/sites/DailyLogDetail'
+import AddBillModal from '../components/sites/AddBillModal'
+import AddDailyLogModal from '../components/sites/AddDailyLogModal'
+import LogAttendanceModal from '../components/sites/LogAttendanceModal'
 import { StageBadge } from '../components/ui/Badge'
 import Badge from '../components/ui/Badge'
-import { PageLoader } from '../components/ui/LoadingSpinner'
+import LoadingSpinner from '../components/ui/LoadingSpinner'
 import DataTable from '../components/ui/DataTable'
 import { DUMMY_SITES } from '../components/overview/SiteGrid'
 
@@ -29,7 +32,7 @@ const TABS = [
   { id: 'alerts',    label: 'Alerts' },
 ]
 
-// Dummy data
+// Dummy chart data for overview charts until dedicated endpoints exist
 const DUMMY_BUDGET_CHART = [
   { month: 'Jan', budget: 2000000, actual: 1820000 },
   { month: 'Feb', budget: 2000000, actual: 2100000 },
@@ -47,31 +50,12 @@ const DUMMY_MATERIAL_PIE = [
   { name: 'Others',    value: 220000,  color: '#112240' },
 ]
 
-const DUMMY_LOGS = [
-  { id: 'l1', date: '2026-06-28', manager: 'Rajan Perera', materials_in: 8, materials_out: 3, workers: 34, total_wage: 204000 },
-  { id: 'l2', date: '2026-06-27', manager: 'Rajan Perera', materials_in: 5, materials_out: 2, workers: 31, total_wage: 186000 },
-  { id: 'l3', date: '2026-06-26', manager: 'Rajan Perera', materials_in: 12, materials_out: 5, workers: 36, total_wage: 216000 },
-  { id: 'l4', date: '2026-06-25', manager: 'Rajan Perera', materials_in: 3, materials_out: 1, workers: 28, total_wage: 168000 },
-]
-
-const DUMMY_ATTENDANCE = [
-  { id: 'a1', name: 'Pradeep Kumara',  role: 'Foreman',     days: 24, total_earned: 108000, total_paid: 108000 },
-  { id: 'a2', name: 'Niroshan Perera', role: 'Mason',       days: 22, total_earned: 70400,  total_paid: 60000  },
-  { id: 'a3', name: 'Sarath Bandara',  role: 'Steel Fixer', days: 20, total_earned: 70000,  total_paid: 70000  },
-  { id: 'a4', name: 'Chaminda Silva',  role: 'Helper',      days: 26, total_earned: 57200,  total_paid: 50000  },
-  { id: 'a5', name: 'Roshan Fernando', role: 'Carpenter',   days: 18, total_earned: 68400,  total_paid: 68400  },
-]
-
-const DUMMY_SITE_ALERTS = [
-  { id: 'sa1', severity: 'danger',  type: 'material_cap',    message: 'Cement usage at 95% of monthly cap', created_at: new Date(Date.now()-1000*60*8).toISOString(),  acknowledged: false },
-  { id: 'sa2', severity: 'warning', type: 'missing_log',     message: 'Daily log not submitted for 2026-06-25', created_at: new Date(Date.now()-1000*60*60*26).toISOString(), acknowledged: true  },
-  { id: 'sa3', severity: 'warning', type: 'delivery_no_bill', message: 'Steel delivery without attached bill photo', created_at: new Date(Date.now()-1000*60*180).toISOString(), acknowledged: false },
-]
-
 function formatLKR(n) {
-  if (n >= 1000000) return `LKR ${(n/1000000).toFixed(2)}M`
-  if (n >= 1000)    return `LKR ${(n/1000).toFixed(0)}K`
-  return `LKR ${n}`
+  const num = Number(n)
+  if (!Number.isFinite(num)) return 'LKR —'
+  if (num >= 1000000) return `LKR ${(num/1000000).toFixed(2)}M`
+  if (num >= 1000)    return `LKR ${(num/1000).toFixed(0)}K`
+  return `LKR ${num.toLocaleString()}`
 }
 
 function BudgetTooltip({ active, payload, label }) {
@@ -93,25 +77,26 @@ export default function SiteDetail() {
   const { siteId } = useParams()
   const [activeTab, setActiveTab] = useState('overview')
   const [selectedLog, setSelectedLog] = useState(null)
+  const [showAddBill, setShowAddBill] = useState(false)
+  const [showAddLog, setShowAddLog] = useState(false)
+  const [showAttendance, setShowAttendance] = useState(false)
 
-  // API hooks — fall back to dummy data
+  // Site header loads once; tab data loads lazily per tab
   const { data: siteData, isLoading: siteLoading } = useSite(siteId)
   const updateSite = useUpdateSite(siteId)
-  const { data: logsData, isLoading: logsLoading }       = useDailyLogs(siteId)
-  const { data: attendanceData, isLoading: attLoading }  = useAttendance(siteId)
-  const { data: billsData, isLoading: billsLoading }     = useBills(siteId)
-  const { data: photosData, isLoading: photosLoading }   = useProgressPhotos(siteId)
-  const { data: alertsData, isLoading: alertsLoading }   = useSiteAlerts(siteId)
+  const { data: logsData, isLoading: logsLoading } = useDailyLogs(siteId, {}, { enabled: activeTab === 'logs' })
+  const { data: attendanceData, isLoading: attLoading } = useAttendance(siteId, {}, { enabled: activeTab === 'attendance' })
+  const { data: billsData, isLoading: billsLoading } = useBills(siteId, {}, { enabled: activeTab === 'bills' })
+  const { data: photosData, isLoading: photosLoading } = useProgressPhotos(siteId, {}, { enabled: activeTab === 'photos' })
+  const { data: alertsData, isLoading: alertsLoading } = useSiteAlerts(siteId, { enabled: activeTab === 'alerts' })
 
   const acknowledgeAlert = useAcknowledgeAlert(siteId)
   const resolveAlert     = useResolveAlert(siteId)
 
-  if (siteLoading) return <PageLoader />
-
-  const site      = siteData ?? DUMMY_SITES.find(s => s.id === siteId) ?? DUMMY_SITES[0]
-  const logs      = logsData?.results ?? logsData ?? DUMMY_LOGS
-  const attendance = attendanceData?.results ?? attendanceData ?? DUMMY_ATTENDANCE
-  const alerts    = alertsData?.results ?? alertsData ?? DUMMY_SITE_ALERTS
+  const site = siteData ?? DUMMY_SITES.find(s => s.id === siteId) ?? DUMMY_SITES[0]
+  const logs = logsData?.results ?? logsData ?? []
+  const attendance = attendanceData?.results ?? attendanceData ?? []
+  const alerts = alertsData?.results ?? alertsData ?? []
 
   return (
     <div>
@@ -152,7 +137,7 @@ export default function SiteDetail() {
             }`}
           >
             {tab.label}
-            {tab.id === 'alerts' && alerts.filter(a => !a.acknowledged).length > 0 && (
+            {tab.id === 'alerts' && alerts.length > 0 && alerts.filter(a => !a.acknowledged).length > 0 && (
               <span className="ml-1.5 px-1.5 py-0.5 rounded-full bg-red-500/20 text-red-400 text-[10px] font-mono">
                 {alerts.filter(a => !a.acknowledged).length}
               </span>
@@ -163,6 +148,9 @@ export default function SiteDetail() {
 
       {/* ── Tab: Overview ── */}
       {activeTab === 'overview' && (
+        siteLoading && !siteData ? (
+          <LoadingSpinner label="Loading site overview…" />
+        ) : (
         <div className="space-y-6">
           <StageStepper
             currentStage={site.stage ?? site.current_stage}
@@ -248,14 +236,23 @@ export default function SiteDetail() {
             ))}
           </div>
         </div>
+        )
       )}
 
       {/* ── Tab: Daily Logs ── */}
       {activeTab === 'logs' && (
+        logsLoading ? (
+          <LoadingSpinner label="Loading daily logs…" />
+        ) : (
         <div>
-          <div className="flex items-center gap-3 mb-4">
-            <input type="date" className="input" style={{ maxWidth: 160 }} />
-            <button className="btn-ghost text-xs">Clear</button>
+          <div className="flex items-center justify-between gap-3 mb-4">
+            <div className="flex items-center gap-3">
+              <input type="date" className="input" style={{ maxWidth: 160 }} />
+              <button className="btn-ghost text-xs">Clear</button>
+            </div>
+            <button type="button" className="btn-primary text-xs" onClick={() => setShowAddLog(true)}>
+              + Add Daily Log
+            </button>
           </div>
           <div className="bg-navy-secondary border border-navy-light rounded-xl overflow-hidden">
             <DataTable
@@ -284,17 +281,18 @@ export default function SiteDetail() {
             />
           </div>
         </div>
+        )
       )}
 
       {/* ── Tab: Attendance ── */}
       {activeTab === 'attendance' && (
+        attLoading ? (
+          <LoadingSpinner label="Loading attendance…" />
+        ) : (
         <div>
           <div className="flex justify-end mb-4">
-            <button className="btn-ghost flex items-center gap-2 text-xs">
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-              </svg>
-              Export
+            <button type="button" className="btn-primary text-xs" onClick={() => setShowAttendance(true)}>
+              + Log Attendance
             </button>
           </div>
           <div className="bg-navy-secondary border border-navy-light rounded-xl overflow-hidden">
@@ -316,11 +314,19 @@ export default function SiteDetail() {
             />
           </div>
         </div>
+        )
       )}
 
       {/* ── Tab: Bills & Receipts ── */}
       {activeTab === 'bills' && (
-        <BillPhotoGrid bills={billsData?.results ?? billsData} isLoading={billsLoading} />
+        <div>
+          <div className="flex justify-end mb-4">
+            <button type="button" className="btn-primary text-xs" onClick={() => setShowAddBill(true)}>
+              + Add Bill
+            </button>
+          </div>
+          <BillPhotoGrid bills={billsData?.results ?? billsData} isLoading={billsLoading} />
+        </div>
       )}
 
       {/* ── Tab: Progress Photos ── */}
@@ -330,6 +336,9 @@ export default function SiteDetail() {
 
       {/* ── Tab: Alerts ── */}
       {activeTab === 'alerts' && (
+        alertsLoading ? (
+          <LoadingSpinner label="Loading alerts…" />
+        ) : (
         <div className="space-y-3">
           {alerts.map((alert) => (
             <div
@@ -371,8 +380,17 @@ export default function SiteDetail() {
             <div className="text-center py-12 text-muted">No alerts for this site.</div>
           )}
         </div>
+        )
       )}
       <DailyLogDetail log={selectedLog} onClose={() => setSelectedLog(null)} />
+      <AddBillModal siteId={siteId} isOpen={showAddBill} onClose={() => setShowAddBill(false)} />
+      <AddDailyLogModal
+        siteId={siteId}
+        currentStage={site.stage ?? site.current_stage}
+        isOpen={showAddLog}
+        onClose={() => setShowAddLog(false)}
+      />
+      <LogAttendanceModal siteId={siteId} isOpen={showAttendance} onClose={() => setShowAttendance(false)} />
     </div>
   )
 }

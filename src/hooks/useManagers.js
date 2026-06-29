@@ -12,19 +12,19 @@ export function useManagers(params = {}) {
   })
 }
 
-export function useManager(managerId) {
+export function useManager(managerId, options = {}) {
   return useQuery({
     queryKey: ['manager', managerId],
     queryFn: () => managerService.getManager(managerId),
-    enabled: !!managerId,
+    enabled: !!managerId && options.enabled !== false,
   })
 }
 
-export function useManagerActivity(managerId, params = {}) {
+export function useManagerActivity(managerId, params = {}, options = {}) {
   return useQuery({
     queryKey: ['manager-activity', managerId, params],
     queryFn: () => managerService.getManagerActivity(managerId, params),
-    enabled: !!managerId,
+    enabled: !!managerId && options.enabled !== false,
   })
 }
 

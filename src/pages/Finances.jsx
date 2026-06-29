@@ -49,9 +49,13 @@ export default function Finances() {
   }, [selectedMonth, selectedSite])
 
   const { data: summary, isLoading: sumLoading } = useFinances('summary', queryParams)
-  const { data: billLog, isLoading: billLoading } = useFinances('bills', queryParams)
-  const { data: wages, isLoading: wageLoading }   = useFinances('wages', queryParams)
   const { data: bySite, isLoading: siteLoading }  = useFinances('by-site', queryParams)
+  const { data: billLog, isLoading: billLoading } = useFinances('bills', queryParams, {
+    enabled: activeTab === 'bills' || activeTab === 'materials',
+  })
+  const { data: wages, isLoading: wageLoading } = useFinances('wages', queryParams, {
+    enabled: activeTab === 'wages',
+  })
 
   const s = summary ?? {
     total_material_spend: 0,

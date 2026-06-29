@@ -8,22 +8,37 @@ import LoadingSpinner from '../ui/LoadingSpinner'
 // Clicking a tile opens a lightbox with full details.
 // ─────────────────────────────────────────────────────────────────────────────
 
-const DUMMY_BILLS = [
-  { id: '1',  date: '2026-06-28', supplier: 'Holcim Lanka', amount: 148500, material: 'Cement',    photo_url: 'https://placehold.co/400x300/112240/C9A84C?text=Bill+Photo' },
-  { id: '2',  date: '2026-06-27', supplier: 'Steel Corp PLC', amount: 324000, material: 'Steel Rod', photo_url: 'https://placehold.co/400x300/112240/C9A84C?text=Bill+Photo' },
-  { id: '3',  date: '2026-06-26', supplier: 'Lanka Tiles', amount: 67200,  material: 'Tiles',      photo_url: 'https://placehold.co/400x300/112240/C9A84C?text=Bill+Photo' },
-  { id: '4',  date: '2026-06-25', supplier: 'Holcim Lanka', amount: 162000, material: 'Cement',    photo_url: 'https://placehold.co/400x300/112240/C9A84C?text=Bill+Photo' },
-  { id: '5',  date: '2026-06-24', supplier: 'Mahaweli Sand', amount: 48000, material: 'Sand',      photo_url: 'https://placehold.co/400x300/112240/C9A84C?text=Bill+Photo' },
-  { id: '6',  date: '2026-06-23', supplier: 'Lanka Paint', amount: 32500,  material: 'Paint',     photo_url: 'https://placehold.co/400x300/112240/C9A84C?text=Bill+Photo' },
-]
+const PLACEHOLDER_PHOTO = 'https://placehold.co/400x300/112240/C9A84C?text=Bill+Receipt'
+
+const MATERIAL_LABELS = {
+  cement: 'Cement', sand: 'Sand', steel: 'Steel', blocks: 'Blocks',
+  aggregate: 'Aggregate', pipes: 'Pipes', timber: 'Timber', bricks: 'Bricks',
+  roofing: 'Roofing', electrical: 'Electrical', plumbing: 'Plumbing',
+  tiles: 'Tiles', paint: 'Paint', other: 'Other',
+}
+
+function normalizeBill(raw) {
+  const amount = Number(raw.amount ?? raw.total_amount_lkr ?? 0)
+  const mat = raw.material ?? raw.material_type ?? ''
+  return {
+    id: raw.id,
+    date: raw.date ?? raw.log_date ?? '',
+    supplier: raw.supplier ?? raw.supplier_name ?? 'Unknown supplier',
+    amount: Number.isFinite(amount) ? amount : 0,
+    material: MATERIAL_LABELS[mat] ?? mat ?? '—',
+    photo_url: raw.photo_url ?? raw.bill_photo_url ?? PLACEHOLDER_PHOTO,
+  }
+}
 
 function formatLKR(n) {
-  return `LKR ${n.toLocaleString()}`
+  const num = Number(n)
+  if (!Number.isFinite(num)) return 'LKR —'
+  return `LKR ${num.toLocaleString()}`
 }
 
 export default function BillPhotoGrid({ bills, isLoading, filters, onFilterChange }) {
   const [lightbox, setLightbox] = useState(null)
-  const displayBills = bills ?? DUMMY_BILLS
+  const displayBills = (bills ?? []).map(normalizeBill)
 
   if (isLoading) {
     return <div className="flex items-center justify-center py-16"><LoadingSpinner size="lg" /></div>

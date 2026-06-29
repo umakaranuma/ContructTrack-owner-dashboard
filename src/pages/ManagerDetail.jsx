@@ -10,7 +10,7 @@ import {
 } from '../hooks/useManagers'
 import { StageBadge } from '../components/ui/Badge'
 import Badge from '../components/ui/Badge'
-import { PageLoader } from '../components/ui/LoadingSpinner'
+import LoadingSpinner from '../components/ui/LoadingSpinner'
 import DataTable from '../components/ui/DataTable'
 import { stageLabel } from '../constants/stages'
 
@@ -50,16 +50,24 @@ export default function ManagerDetail() {
   const [activeTab, setActiveTab] = useState('overview')
   const [actionMsg, setActionMsg] = useState('')
 
-  const { data: manager, isLoading, isError, refetch } = useManager(managerId)
-  const { data: activity, isLoading: activityLoading } = useManagerActivity(managerId)
+  const loadProfile = activeTab === 'overview' || activeTab === 'sites'
+  const loadActivity = activeTab === 'activity'
+
+  const { data: manager, isLoading: managerLoading, isError, refetch } = useManager(
+    managerId,
+    { enabled: loadProfile },
+  )
+  const { data: activity, isLoading: activityLoading } = useManagerActivity(
+    managerId,
+    {},
+    { enabled: loadActivity },
+  )
 
   const deactivate = useDeactivateManager()
   const removeManager = useRemoveManager()
   const removeFromSite = useRemoveFromSite()
 
-  if (isLoading) return <PageLoader />
-
-  if (isError || !manager) {
+  if (loadProfile && isError && !manager) {
     return (
       <div className="text-center py-16">
         <p className="text-muted mb-4">Manager not found.</p>
@@ -68,9 +76,9 @@ export default function ManagerDetail() {
     )
   }
 
-  const name = manager.name ?? manager.full_name ?? 'Manager'
-  const exp = manager.experience ?? {}
-  const sites = manager.assigned_sites ?? []
+  const name = manager?.name ?? manager?.full_name ?? 'Manager'
+  const exp = manager?.experience ?? {}
+  const sites = manager?.assigned_sites ?? []
   const activityList = Array.isArray(activity) ? activity : activity?.results ?? []
 
   async function handleDeactivate() {
@@ -166,7 +174,7 @@ export default function ManagerDetail() {
             ← Back to Managers
           </Link>
           <div className="flex items-center gap-4 mt-3">
-            {manager.profile_photo_url ? (
+            {manager?.profile_photo_url ? (
               <img
                 src={manager.profile_photo_url}
                 alt={name}
@@ -180,14 +188,18 @@ export default function ManagerDetail() {
             <div>
               <div className="flex items-center gap-3 flex-wrap">
                 <h1 className="page-title">{name}</h1>
-                <Badge variant={manager.status === 'active' ? 'success' : manager.status === 'suspended' ? 'danger' : 'muted'}>
-                  {manager.status}
-                </Badge>
+                {manager?.status && (
+                  <Badge variant={manager.status === 'active' ? 'success' : manager.status === 'suspended' ? 'danger' : 'muted'}>
+                    {manager.status}
+                  </Badge>
+                )}
               </div>
-              <p className="text-muted text-sm mt-0.5">{manager.email}</p>
+              <p className="text-muted text-sm mt-0.5">{manager?.email ?? '—'}</p>
               <div className="flex flex-wrap items-center gap-4 mt-1">
-                <span className="font-mono text-gold text-sm">{manager.ref_code ?? manager.reference_code}</span>
-                {manager.phone && <span className="text-muted text-sm">{manager.phone}</span>}
+                {(manager?.ref_code ?? manager?.reference_code) && (
+                  <span className="font-mono text-gold text-sm">{manager.ref_code ?? manager.reference_code}</span>
+                )}
+                {manager?.phone && <span className="text-muted text-sm">{manager.phone}</span>}
               </div>
             </div>
           </div>
@@ -196,7 +208,7 @@ export default function ManagerDetail() {
         <div className="text-right text-sm">
           <p className="text-muted text-xs uppercase tracking-wider">Last active</p>
           <p className="font-mono text-off-white mt-1">
-            {manager.last_active
+            {manager?.last_active
               ? formatDistanceToNow(new Date(manager.last_active), { addSuffix: true })
               : '—'}
           </p>
@@ -225,6 +237,9 @@ export default function ManagerDetail() {
 
       {/* Overview */}
       {activeTab === 'overview' && (
+        managerLoading && !manager ? (
+          <LoadingSpinner label="Loading profile…" />
+        ) : (
         <div className="space-y-6">
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
             <StatCard label="Sites Managed" value={exp.total_sites ?? sites.length} />
@@ -237,11 +252,11 @@ export default function ManagerDetail() {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <div className="card border border-white/5 p-5">
               <h2 className="section-title mb-4">Profile</h2>
-              <DetailRow label="Full Name" value={manager.full_name ?? name} />
-              <DetailRow label="Email" value={manager.email} mono />
-              <DetailRow label="Phone" value={manager.phone} mono />
-              <DetailRow label="NIC" value={manager.nic} mono />
-              <DetailRow label="Reference Code" value={manager.ref_code ?? manager.reference_code} mono />
+              <DetailRow label="Full Name" value={manager?.full_name ?? name} />
+              <DetailRow label="Email" value={manager?.email} mono />
+              <DetailRow label="Phone" value={manager?.phone} mono />
+              <DetailRow label="NIC" value={manager?.nic} mono />
+              <DetailRow label="Reference Code" value={manager?.ref_code ?? manager?.reference_code} mono />
               <DetailRow
                 label="Member Since"
                 value={exp.member_since ? format(new Date(exp.member_since), 'dd MMM yyyy') : '—'}
@@ -289,10 +304,14 @@ export default function ManagerDetail() {
             </div>
           </div>
         </div>
+        )
       )}
 
       {/* Assigned Sites */}
       {activeTab === 'sites' && (
+        managerLoading && !manager ? (
+          <LoadingSpinner label="Loading assigned sites…" />
+        ) : (
         <div className="card border border-white/5 p-5">
           <h2 className="section-title mb-5">Assigned Sites</h2>
           {sites.length === 0 ? (
@@ -308,6 +327,7 @@ export default function ManagerDetail() {
             </div>
           )}
         </div>
+        )
       )}
 
       {/* Activity */}
@@ -315,7 +335,7 @@ export default function ManagerDetail() {
         <div className="card border border-white/5 p-5">
           <h2 className="section-title mb-5">Recent Activity</h2>
           {activityLoading ? (
-            <p className="text-muted text-sm py-8 text-center">Loading activity…</p>
+            <LoadingSpinner label="Loading activity…" />
           ) : activityList.length === 0 ? (
             <p className="text-muted text-sm text-center py-10">No activity recorded yet.</p>
           ) : (
@@ -365,7 +385,7 @@ export default function ManagerDetail() {
         <div className="flex flex-wrap gap-3">
           <button
             onClick={handleDeactivate}
-            disabled={deactivate.isPending || manager.status !== 'active'}
+            disabled={deactivate.isPending || manager?.status !== 'active'}
             className="btn-outline text-amber-400 border-amber-500/30 hover:bg-amber-500/10"
           >
             {deactivate.isPending ? 'Deactivating…' : 'Deactivate Manager'}

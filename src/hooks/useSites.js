@@ -14,11 +14,11 @@ export function useSites(params = {}, options = {}) {
   })
 }
 
-export function useSite(siteId) {
+export function useSite(siteId, options = {}) {
   return useQuery({
     queryKey: ['site', siteId],
     queryFn: () => siteService.getSite(siteId),
-    enabled: !!siteId,
+    enabled: !!siteId && options.enabled !== false,
   })
 }
 
@@ -46,43 +46,43 @@ export function useAllAlerts() {
   })
 }
 
-export function useDailyLogs(siteId, params = {}) {
+export function useDailyLogs(siteId, params = {}, options = {}) {
   return useQuery({
     queryKey: ['daily-logs', siteId, params],
     queryFn: () => siteService.getDailyLogs(siteId, params),
-    enabled: !!siteId,
+    enabled: !!siteId && options.enabled !== false,
   })
 }
 
-export function useAttendance(siteId, params = {}) {
+export function useAttendance(siteId, params = {}, options = {}) {
   return useQuery({
     queryKey: ['attendance', siteId, params],
     queryFn: () => siteService.getAttendance(siteId, params),
-    enabled: !!siteId,
+    enabled: !!siteId && options.enabled !== false,
   })
 }
 
-export function useBills(siteId, params = {}) {
+export function useBills(siteId, params = {}, options = {}) {
   return useQuery({
     queryKey: ['bills', siteId, params],
     queryFn: () => siteService.getBills(siteId, params),
-    enabled: !!siteId,
+    enabled: !!siteId && options.enabled !== false,
   })
 }
 
-export function useProgressPhotos(siteId, params = {}) {
+export function useProgressPhotos(siteId, params = {}, options = {}) {
   return useQuery({
     queryKey: ['photos', siteId, params],
     queryFn: () => siteService.getProgressPhotos(siteId, params),
-    enabled: !!siteId,
+    enabled: !!siteId && options.enabled !== false,
   })
 }
 
-export function useSiteAlerts(siteId) {
+export function useSiteAlerts(siteId, options = {}) {
   return useQuery({
     queryKey: ['site-alerts', siteId],
     queryFn: () => siteService.getSiteAlerts(siteId),
-    enabled: !!siteId,
+    enabled: !!siteId && options.enabled !== false,
   })
 }
 
@@ -126,6 +126,60 @@ export function useResolveAlert(siteId) {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['site-alerts', siteId] })
       qc.invalidateQueries({ queryKey: ['all-alerts'] })
+    },
+  })
+}
+
+export function useSiteWorkers(siteId, options = {}) {
+  return useQuery({
+    queryKey: ['site-workers', siteId],
+    queryFn: () => siteService.getWorkers(siteId),
+    enabled: !!siteId && options.enabled !== false,
+  })
+}
+
+export function useCreateBill(siteId) {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (payload) => siteService.createBill(siteId, payload),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['bills', siteId] })
+      qc.invalidateQueries({ queryKey: ['daily-logs', siteId] })
+      qc.invalidateQueries({ queryKey: ['overview-stats'] })
+    },
+  })
+}
+
+export function useCreateDailyLog(siteId) {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (payload) => siteService.createDailyLog(siteId, payload),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['daily-logs', siteId] })
+      qc.invalidateQueries({ queryKey: ['overview-stats'] })
+    },
+  })
+}
+
+export function useSubmitAttendance(siteId) {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (payload) => siteService.submitAttendance(siteId, payload),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['attendance', siteId] })
+      qc.invalidateQueries({ queryKey: ['daily-logs', siteId] })
+      qc.invalidateQueries({ queryKey: ['overview-stats'] })
+    },
+  })
+}
+
+export function useCreateWorker(siteId) {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (payload) => siteService.createWorker(siteId, payload),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['site-workers', siteId] })
+      qc.invalidateQueries({ queryKey: ['attendance', siteId] })
     },
   })
 }

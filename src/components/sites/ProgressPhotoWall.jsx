@@ -1,39 +1,61 @@
 import { useState } from 'react'
 import Modal from '../ui/Modal'
 import EmptyState from '../ui/EmptyState'
+import LoadingSpinner from '../ui/LoadingSpinner'
 
 // ─── ProgressPhotoWall ─────────────────────────────────────────────────────────
 // Chronological photo wall, grouped by date. Click opens lightbox with
 // GPS coordinates, timestamp, and manager note.
 // ─────────────────────────────────────────────────────────────────────────────
 
-const DUMMY_PHOTOS = [
-  {
-    date: '2026-06-28',
-    photos: [
-      { id: 'p1', url: 'https://placehold.co/600x400/0A1628/C9A84C?text=Slab+Work', note: 'Slab reinforcement complete — west wing', gps: '6.9271° N, 79.8612° E', ts: '08:34 AM' },
-      { id: 'p2', url: 'https://placehold.co/600x400/112240/F0C96B?text=Column+Pour', note: 'Column pour — Level 3 north face', gps: '6.9272° N, 79.8614° E', ts: '10:12 AM' },
-      { id: 'p3', url: 'https://placehold.co/600x400/0A1628/22C55E?text=Progress+Photo', note: 'General site overview — midday', gps: '6.9270° N, 79.8611° E', ts: '12:05 PM' },
-    ],
-  },
-  {
-    date: '2026-06-27',
-    photos: [
-      { id: 'p4', url: 'https://placehold.co/600x400/112240/C9A84C?text=Foundation', note: 'Foundation waterproofing applied — south section', gps: '6.9269° N, 79.8610° E', ts: '09:20 AM' },
-      { id: 'p5', url: 'https://placehold.co/600x400/0A1628/F0C96B?text=Steel+Work', note: 'Steel rod binding — column grid C4', gps: '6.9271° N, 79.8612° E', ts: '02:45 PM' },
-    ],
-  },
-  {
-    date: '2026-06-26',
-    photos: [
-      { id: 'p6', url: 'https://placehold.co/600x400/112240/7A8BA0?text=Brickwork', note: 'Brickwork complete — ground floor east', gps: '6.9270° N, 79.8613° E', ts: '11:30 AM' },
-    ],
-  },
-]
+const PLACEHOLDER_PHOTO = 'https://placehold.co/600x400/0A1628/C9A84C?text=Progress+Photo'
+
+function formatGps(lat, lng) {
+  if (lat == null || lng == null) return '—'
+  return `${lat}° N, ${lng}° E`
+}
+
+function formatTs(takenAt) {
+  if (!takenAt) return '—'
+  try {
+    return new Date(takenAt).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })
+  } catch {
+    return '—'
+  }
+}
+
+function normalizePhoto(p) {
+  return {
+    id: p.id,
+    url: p.url ?? p.photo_url ?? PLACEHOLDER_PHOTO,
+    note: p.note ?? p.caption ?? 'Progress photo',
+    gps: p.gps ?? formatGps(p.gps_lat ?? p.photo_gps_lat, p.gps_lng ?? p.photo_gps_lng),
+    ts: p.ts ?? formatTs(p.taken_at ?? p.photo_taken_at),
+    date: p.log_date ?? (p.taken_at ? String(p.taken_at).slice(0, 10) : null),
+  }
+}
+
+function groupPhotos(photos) {
+  if (!photos?.length) return []
+  if (photos[0]?.photos) return photos
+
+  const byDate = {}
+  for (const raw of photos) {
+    const p = normalizePhoto(raw)
+    const date = p.date ?? 'unknown'
+    if (!byDate[date]) byDate[date] = { date, photos: [] }
+    byDate[date].photos.push(p)
+  }
+  return Object.values(byDate).sort((a, b) => String(b.date).localeCompare(String(a.date)))
+}
 
 export default function ProgressPhotoWall({ photos, isLoading }) {
   const [lightbox, setLightbox] = useState(null)
-  const grouped = photos ?? DUMMY_PHOTOS
+  const grouped = groupPhotos(photos)
+
+  if (isLoading) {
+    return <div className="flex items-center justify-center py-16"><LoadingSpinner size="lg" /></div>
+  }
 
   if (!grouped.length) {
     return (

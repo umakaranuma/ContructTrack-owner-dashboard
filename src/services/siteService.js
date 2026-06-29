@@ -53,6 +53,22 @@ export const siteService = {
   resolveAlert: (siteId, alertId) =>
     api.post(`/api/sites/${siteId}/alerts/${alertId}/resolve/`).then((r) => r.data.result),
 
+  // Site workers roster
+  getWorkers: (siteId) =>
+    api.get(`/api/sites/${siteId}/workers/`).then((r) => r.data.result),
+
+  createWorker: (siteId, payload) =>
+    api.post(`/api/sites/${siteId}/workers/`, payload).then((r) => r.data.result),
+
+  createBill: (siteId, payload) =>
+    api.post(`/api/sites/${siteId}/bills/`, payload).then((r) => r.data.result),
+
+  createDailyLog: (siteId, payload) =>
+    api.post(`/api/sites/${siteId}/daily-logs/`, payload).then((r) => r.data.result),
+
+  submitAttendance: (siteId, payload) =>
+    api.post(`/api/sites/${siteId}/attendance/`, payload).then((r) => r.data.result),
+
   // Fetch overview stats (active sites, spend, workers, alerts)
   getOverviewStats: () =>
     api.get('/api/dashboard/overview/').then((r) => r.data.result),

@@ -13,11 +13,12 @@ const RESOURCE_FN = {
   'by-site':(p) => reportService.getSpendBySite(p),
 }
 
-export function useFinances(resource, params = {}) {
+export function useFinances(resource, params = {}, options = {}) {
   return useQuery({
     queryKey: ['finances', resource, params],
     queryFn:  () => (RESOURCE_FN[resource] ?? RESOURCE_FN.summary)(params),
     staleTime: 1000 * 30,
+    enabled: options.enabled !== false,
   })
 }
 
