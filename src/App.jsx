@@ -10,6 +10,7 @@ import useAuthStore from './store/authStore'
 import Sidebar from './components/layout/Sidebar'
 import Topbar from './components/layout/Topbar'
 import AlertDrawer from './components/layout/AlertDrawer'
+import ErrorBoundary from './components/ui/ErrorBoundary'
 
 // Pages
 import Login from './pages/Login'
@@ -35,11 +36,11 @@ function DashboardLayout() {
       <div className="flex flex-col flex-1 overflow-hidden">
         <Topbar />
         <main className="flex-1 overflow-y-auto p-6">
-          <Outlet />
+          <ErrorBoundary>
+            <Outlet />
+          </ErrorBoundary>
         </main>
       </div>
-      {/* Alert drawer — slides in from the right, triggered by Topbar bell icon */}
-      <AlertDrawer />
     </div>
   )
 }

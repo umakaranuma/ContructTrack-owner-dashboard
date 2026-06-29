@@ -73,8 +73,8 @@ const SEVERITY_DOT = {
 export default function AlertDrawer({ isOpen, onClose }) {
   const { data, isLoading } = useAllAlerts()
 
-  // Use real data if available, else dummy
-  const alerts = data?.results ?? DUMMY_ALERTS
+  // API returns an array directly (r.data.result is already the array)
+  const alerts = Array.isArray(data) ? data : (data?.results ?? DUMMY_ALERTS)
 
   // Trap keyboard
   useEffect(() => {

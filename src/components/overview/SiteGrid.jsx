@@ -137,6 +137,16 @@ export default function SiteGrid({ sites, isLoading }) {
 }
 
 function SiteCard({ site, onNavigate }) {
+  // Normalise field names — backend may return `address`/`current_stage`/`budget_lkr`
+  // while older dummy data uses `location`/`stage`/`budget`. Support both.
+  const location       = site.location ?? site.address ?? ''
+  const stage          = site.stage ?? site.current_stage ?? 'excavation'
+  const usagePct       = site.material_usage_pct ?? 0
+  const workersToday   = site.workers_today ?? 0
+  const monthlySpend   = site.monthly_spend ?? 0
+  const managerName    = site.manager_name ?? 'No manager assigned'
+  const lastSeen       = site.manager_last_seen ?? site.created_at
+
   return (
     <div className="bg-navy-secondary border border-navy-light rounded-xl p-5 hover:border-gold/30 transition-colors group">
       {/* Header */}
@@ -150,28 +160,28 @@ function SiteCard({ site, onNavigate }) {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
             </svg>
-            <span className="text-muted text-xs truncate">{site.location}</span>
+            <span className="text-muted text-xs truncate">{location}</span>
           </div>
         </div>
-        <StageBadge stage={site.stage} />
+        <StageBadge stage={stage} />
       </div>
 
       {/* Material usage bar */}
       <div className="mb-4">
-        <UsageBar pct={site.material_usage_pct} />
+        <UsageBar pct={usagePct} />
       </div>
 
       {/* Stats row */}
       <div className="grid grid-cols-2 gap-3 mb-4">
         <div className="bg-navy-primary/60 rounded-lg px-3 py-2">
           <p className="text-muted text-[10px] uppercase tracking-wider mb-0.5">Workers Today</p>
-          <p className={`font-mono font-bold text-lg ${site.workers_today > 0 ? 'text-green-400' : 'text-muted'}`}>
-            {site.workers_today}
+          <p className={`font-mono font-bold text-lg ${workersToday > 0 ? 'text-green-400' : 'text-muted'}`}>
+            {workersToday}
           </p>
         </div>
         <div className="bg-navy-primary/60 rounded-lg px-3 py-2">
           <p className="text-muted text-[10px] uppercase tracking-wider mb-0.5">Monthly Spend</p>
-          <p className="font-mono font-bold text-sm text-offwhite">{formatLKR(site.monthly_spend)}</p>
+          <p className="font-mono font-bold text-sm text-offwhite">{formatLKR(monthlySpend)}</p>
         </div>
       </div>
 
@@ -179,13 +189,13 @@ function SiteCard({ site, onNavigate }) {
       <div className="flex items-center gap-2 mb-4 pb-4 border-b border-navy-light/50">
         <div className="w-6 h-6 rounded-full bg-gold/20 flex items-center justify-center flex-shrink-0">
           <span className="font-syne font-bold text-gold text-[10px]">
-            {site.manager_name.charAt(0)}
+            {managerName.charAt(0).toUpperCase()}
           </span>
         </div>
         <div className="flex items-center justify-between flex-1 min-w-0">
-          <span className="text-offwhite text-xs font-medium truncate">{site.manager_name}</span>
+          <span className="text-offwhite text-xs font-medium truncate">{managerName}</span>
           <span className="text-muted text-[10px] font-mono flex-shrink-0 ml-2">
-            {timeAgo(site.manager_last_seen)}
+            {lastSeen ? timeAgo(lastSeen) : '—'}
           </span>
         </div>
       </div>
