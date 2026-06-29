@@ -16,6 +16,7 @@ import { StageBadge } from '../components/ui/Badge'
 import Badge from '../components/ui/Badge'
 import LoadingSpinner from '../components/ui/LoadingSpinner'
 import DataTable from '../components/ui/DataTable'
+import { stageLabel } from '../constants/stages'
 import { DUMMY_SITES } from '../components/overview/SiteGrid'
 
 // ─── SiteDetail Page ───────────────────────────────────────────────────────────
@@ -80,11 +81,13 @@ export default function SiteDetail() {
   const [showAddBill, setShowAddBill] = useState(false)
   const [showAddLog, setShowAddLog] = useState(false)
   const [showAttendance, setShowAttendance] = useState(false)
+  const [logDateFilter, setLogDateFilter] = useState('')
 
   // Site header loads once; tab data loads lazily per tab
   const { data: siteData, isLoading: siteLoading } = useSite(siteId)
   const updateSite = useUpdateSite(siteId)
-  const { data: logsData, isLoading: logsLoading } = useDailyLogs(siteId, {}, { enabled: activeTab === 'logs' })
+  const logQueryParams = logDateFilter ? { date: logDateFilter } : {}
+  const { data: logsData, isLoading: logsLoading } = useDailyLogs(siteId, logQueryParams, { enabled: activeTab === 'logs' })
   const { data: attendanceData, isLoading: attLoading } = useAttendance(siteId, {}, { enabled: activeTab === 'attendance' })
   const { data: billsData, isLoading: billsLoading } = useBills(siteId, {}, { enabled: activeTab === 'bills' })
   const { data: photosData, isLoading: photosLoading } = useProgressPhotos(siteId, {}, { enabled: activeTab === 'photos' })
@@ -245,12 +248,34 @@ export default function SiteDetail() {
           <LoadingSpinner label="Loading daily logs…" />
         ) : (
         <div>
-          <div className="flex items-center justify-between gap-3 mb-4">
-            <div className="flex items-center gap-3">
-              <input type="date" className="input" style={{ maxWidth: 160 }} />
-              <button className="btn-ghost text-xs">Clear</button>
+          <div className="flex items-center justify-between gap-3 mb-4 flex-wrap">
+            <div className="flex items-center gap-3 flex-wrap">
+              <div>
+                <label className="label text-xs mb-1 block">Filter by date</label>
+                <input
+                  type="date"
+                  className="input"
+                  style={{ maxWidth: 180 }}
+                  value={logDateFilter}
+                  onChange={(e) => setLogDateFilter(e.target.value)}
+                />
+              </div>
+              {logDateFilter && (
+                <button
+                  type="button"
+                  className="btn-ghost text-xs mt-5"
+                  onClick={() => setLogDateFilter('')}
+                >
+                  Clear filter
+                </button>
+              )}
+              {logDateFilter && (
+                <p className="text-muted text-xs mt-5">
+                  Showing logs for <span className="text-offwhite font-mono">{logDateFilter}</span>
+                </p>
+              )}
             </div>
-            <button type="button" className="btn-primary text-xs" onClick={() => setShowAddLog(true)}>
+            <button type="button" className="btn-primary text-xs shrink-0" onClick={() => setShowAddLog(true)}>
               + Add Daily Log
             </button>
           </div>
@@ -258,6 +283,7 @@ export default function SiteDetail() {
             <DataTable
               columns={[
                 { key: 'date',        label: 'Date',            render: v => <span className="font-mono text-sm text-muted">{v}</span> },
+                { key: 'stage',       label: 'Stage',           render: v => <span className="text-offwhite text-sm">{stageLabel(v)}</span> },
                 { key: 'manager',     label: 'Manager',         render: v => <span className="text-offwhite text-sm">{v}</span> },
                 { key: 'materials_in', label: 'Materials In',   render: v => <span className="font-mono text-green-400 text-sm">{v} items</span> },
                 { key: 'materials_out', label: 'Materials Out', render: v => <span className="font-mono text-amber-400 text-sm">{v} items</span> },
