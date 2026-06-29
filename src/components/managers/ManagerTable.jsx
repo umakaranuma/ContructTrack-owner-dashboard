@@ -103,7 +103,7 @@ export default function ManagerTable({ managers, isLoading, onView, onViewDetail
             onClick={(e) => { e.stopPropagation(); handleView?.(row) }}
             className="text-xs px-2.5 py-1 rounded bg-navy-light/40 hover:bg-gold/10 text-muted hover:text-gold border border-navy-light hover:border-gold/30 transition-colors"
           >
-            View
+            View Details
           </button>
         </div>
       ),
@@ -116,6 +116,7 @@ export default function ManagerTable({ managers, isLoading, onView, onViewDetail
       data={data}
       isLoading={isLoading}
       keyField="id"
+      onRowClick={(row) => handleView?.(row)}
       emptyTitle="No managers yet"
       emptyDescription="Add managers by reference code, email, or send an invite."
     />

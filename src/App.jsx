@@ -18,6 +18,7 @@ import Overview from './pages/Overview'
 import Sites from './pages/Sites'
 import SiteDetail from './pages/SiteDetail'
 import Managers from './pages/Managers'
+import ManagerDetail from './pages/ManagerDetail'
 import Finances from './pages/Finances'
 import BillDetail from './pages/BillDetail'
 import WageDetail from './pages/WageDetail'
@@ -61,6 +62,7 @@ export default function App() {
         <Route path="sites" element={<Sites />} />
         <Route path="sites/:siteId" element={<SiteDetail />} />
         <Route path="managers" element={<Managers />} />
+        <Route path="managers/:managerId" element={<ManagerDetail />} />
         <Route path="finances" element={<Finances />} />
         <Route path="finances/bills/:billId" element={<BillDetail />} />
         <Route path="finances/wages/:wageId" element={<WageDetail />} />

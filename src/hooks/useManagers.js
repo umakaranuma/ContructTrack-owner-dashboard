@@ -55,12 +55,26 @@ export function useAssignToSite() {
   })
 }
 
+export function useRemoveFromSite() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({ managerId, siteId }) => managerService.removeFromSite(managerId, siteId),
+    onSuccess: (_, { managerId }) => {
+      qc.invalidateQueries({ queryKey: ['managers'] })
+      qc.invalidateQueries({ queryKey: ['manager', managerId] })
+      qc.invalidateQueries({ queryKey: ['manager-activity', managerId] })
+      qc.invalidateQueries({ queryKey: ['sites'] })
+    },
+  })
+}
+
 export function useDeactivateManager() {
   const qc = useQueryClient()
   return useMutation({
     mutationFn: managerService.deactivateManager,
-    onSuccess: () => {
+    onSuccess: (_, managerId) => {
       qc.invalidateQueries({ queryKey: ['managers'] })
+      qc.invalidateQueries({ queryKey: ['manager', managerId] })
     },
   })
 }

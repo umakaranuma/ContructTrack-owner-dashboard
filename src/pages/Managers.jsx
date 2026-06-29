@@ -1,35 +1,34 @@
 /**
  * Managers page — /dashboard/managers
  * Shows all managers linked to this tenant's sites.
- * Supports 3 add-manager methods: Reference Code, Email search, Email invite.
  */
 import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useManagers } from '../hooks/useManagers'
 import ManagerTable from '../components/managers/ManagerTable'
 import AddManagerModal from '../components/managers/AddManagerModal'
-import ManagerDetail from '../components/managers/ManagerDetail'
 import LoadingSpinner from '../components/ui/LoadingSpinner'
 import EmptyState from '../components/ui/EmptyState'
 
 export default function Managers() {
+  const navigate = useNavigate()
   const { data: managers, isLoading, error } = useManagers()
-  const [showAddModal, setShowAddModal]       = useState(false)
-  const [selectedManager, setSelectedManager] = useState(null)
-  const [search, setSearch]                   = useState('')
+  const [showAddModal, setShowAddModal] = useState(false)
+  const [search, setSearch] = useState('')
 
   const list = managers?.results ?? managers ?? []
 
-  // Client-side filter while API returns full list
   const filtered = list.filter(m =>
     !search ||
     m.full_name?.toLowerCase().includes(search.toLowerCase()) ||
+    m.name?.toLowerCase().includes(search.toLowerCase()) ||
     m.email?.toLowerCase().includes(search.toLowerCase()) ||
-    m.reference_code?.toLowerCase().includes(search.toLowerCase())
+    m.reference_code?.toLowerCase().includes(search.toLowerCase()) ||
+    m.ref_code?.toLowerCase().includes(search.toLowerCase())
   )
 
   return (
     <div className="space-y-6">
-      {/* ── Page Header ── */}
       <div className="flex items-center justify-between">
         <div>
           <h1 className="page-title">Managers</h1>
@@ -42,7 +41,6 @@ export default function Managers() {
         </button>
       </div>
 
-      {/* ── Search bar ── */}
       <div className="relative max-w-sm">
         <svg
           className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted"
@@ -60,11 +58,12 @@ export default function Managers() {
         />
       </div>
 
-      {/* ── Table / Loading / Empty states ── */}
       {isLoading ? (
         <LoadingSpinner label="Loading managers…" />
       ) : error ? (
-        <div className="card text-red-400 text-sm">Failed to load managers. Please refresh.</div>
+        <div className="card border border-white/5 p-5 text-red-400 text-sm">
+          Failed to load managers. Please refresh.
+        </div>
       ) : filtered.length === 0 ? (
         <EmptyState
           icon={
@@ -82,23 +81,16 @@ export default function Managers() {
           )}
         />
       ) : (
-        <ManagerTable
-          managers={filtered}
-          onView={setSelectedManager}
-        />
+        <div className="card border border-white/5 p-5">
+          <ManagerTable
+            managers={filtered}
+            onView={(row) => navigate(`/dashboard/managers/${row.id}`)}
+          />
+        </div>
       )}
 
-      {/* ── Add Manager modal (3-method) ── */}
       {showAddModal && (
         <AddManagerModal onClose={() => setShowAddModal(false)} />
-      )}
-
-      {/* ── Manager detail modal ── */}
-      {selectedManager && (
-        <ManagerDetail
-          manager={selectedManager}
-          onClose={() => setSelectedManager(null)}
-        />
       )}
     </div>
   )
