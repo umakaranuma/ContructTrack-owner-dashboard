@@ -176,6 +176,7 @@ export function useSubmitAttendance(siteId) {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['attendance', siteId] })
       qc.invalidateQueries({ queryKey: ['daily-logs', siteId] })
+      qc.invalidateQueries({ queryKey: ['daily-log', siteId] })
       qc.invalidateQueries({ queryKey: ['overview-stats'] })
     },
   })

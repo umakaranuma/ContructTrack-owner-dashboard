@@ -1,6 +1,8 @@
+import { useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { useDailyLogDetail } from '../hooks/useSites'
 import { PageLoader } from '../components/ui/LoadingSpinner'
+import LogAttendanceModal from '../components/sites/LogAttendanceModal'
 import { stageLabel } from '../constants/stages'
 import { optionLabel, TOMORROW_STATUS_OPTIONS } from '../constants/dailyLogOptions'
 
@@ -53,6 +55,7 @@ const STATUS_LABELS = { present: 'Present', half: 'Half Day', absent: 'Absent' }
 export default function DailyLogDetailPage() {
   const { siteId, logId } = useParams()
   const { data: log, isLoading, isError } = useDailyLogDetail(siteId, logId)
+  const [showAttendance, setShowAttendance] = useState(false)
 
   if (isLoading) return <PageLoader />
 
@@ -122,63 +125,89 @@ export default function DailyLogDetailPage() {
         )}
       </div>
 
-      {/* Same-day attendance */}
-      <Section title="Workers & Attendance" count={log.attendance?.length} empty={!hasAttendance}>
-        {log.attendance_summary && (
-          <div className="grid grid-cols-4 gap-3 mb-4">
-            {[
-              { label: 'Present', value: log.attendance_summary.total_present, color: 'text-green-400' },
-              { label: 'Half day', value: log.attendance_summary.total_half, color: 'text-amber-400' },
-              { label: 'Absent', value: log.attendance_summary.total_absent, color: 'text-red-400' },
-              { label: 'Total wage', value: formatLKR(log.attendance_summary.total_wage_lkr), color: 'text-gold' },
-            ].map((s) => (
-              <div key={s.label} className="bg-navy-primary rounded-lg p-3 border border-navy-light text-center">
-                <p className="text-muted text-[10px] uppercase tracking-wider">{s.label}</p>
-                <p className={`font-mono font-semibold text-sm mt-1 ${s.color}`}>{s.value}</p>
-              </div>
-            ))}
-          </div>
-        )}
-        <div className="overflow-x-auto rounded-xl border border-navy-light">
-          <table className="w-full text-sm">
-            <thead className="bg-navy-primary text-muted text-xs uppercase">
-              <tr>
-                <th className="text-left px-4 py-3">Worker</th>
-                <th className="text-left px-4 py-3">Status</th>
-                <th className="text-left px-4 py-3">OT</th>
-                <th className="text-right px-4 py-3">Earned</th>
-                <th className="text-right px-4 py-3">Paid</th>
-              </tr>
-            </thead>
-            <tbody>
-              {log.attendance.map((row) => (
-                <tr key={row.id} className="border-t border-navy-light/50">
-                  <td className="px-4 py-3">
-                    <p className="text-offwhite font-medium">{row.worker_name}</p>
-                    <p className="text-muted text-xs">{row.role}</p>
-                  </td>
-                  <td className="px-4 py-3">
-                    <span className={`text-xs px-2 py-0.5 rounded-full border ${
-                      row.status === 'present' ? 'border-green-500/30 text-green-400 bg-green-500/10'
-                        : row.status === 'half' ? 'border-amber-500/30 text-amber-400 bg-amber-500/10'
-                          : 'border-red-500/30 text-red-400 bg-red-500/10'
-                    }`}>
-                      {STATUS_LABELS[row.status] ?? row.status}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3 font-mono text-muted">{row.overtime_hours}h</td>
-                  <td className="px-4 py-3 font-mono text-offwhite text-right">{formatLKR(row.total_earned_lkr)}</td>
-                  <td className="px-4 py-3 text-right">
-                    {row.is_paid
-                      ? <span className="text-green-400 text-xs">Paid</span>
-                      : <span className="text-muted text-xs">Unpaid</span>}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+      {/* Attendance — always shown; empty state when not marked */}
+      <div className="card border border-white/5 p-5">
+        <div className="flex items-center justify-between mb-4 gap-3 flex-wrap">
+          <h2 className="section-title">Workers & Attendance</h2>
+          <button
+            type="button"
+            className="btn-primary text-xs"
+            onClick={() => setShowAttendance(true)}
+          >
+            {hasAttendance ? 'Update attendance' : 'Mark attendance'}
+          </button>
         </div>
-      </Section>
+
+        {!hasAttendance ? (
+          <div className="flex flex-col items-center justify-center py-10 rounded-xl border border-dashed border-amber-500/25 bg-amber-500/5 text-center px-4">
+            <svg className="w-10 h-10 text-amber-400/60 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
+            </svg>
+            <p className="text-amber-200/90 font-medium text-sm">Attendance is not marked</p>
+            <p className="text-muted text-xs mt-1 max-w-sm">
+              No worker attendance has been recorded for {formatDate(log.log_date)}.
+              Mark who was on site, or add new workers for this day.
+            </p>
+          </div>
+        ) : (
+          <>
+            {log.attendance_summary && (
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
+                {[
+                  { label: 'Present', value: log.attendance_summary.total_present, color: 'text-green-400' },
+                  { label: 'Half day', value: log.attendance_summary.total_half, color: 'text-amber-400' },
+                  { label: 'Absent', value: log.attendance_summary.total_absent, color: 'text-red-400' },
+                  { label: 'Total wage', value: formatLKR(log.attendance_summary.total_wage_lkr), color: 'text-gold' },
+                ].map((s) => (
+                  <div key={s.label} className="bg-navy-primary rounded-lg p-3 border border-navy-light text-center">
+                    <p className="text-muted text-[10px] uppercase tracking-wider">{s.label}</p>
+                    <p className={`font-mono font-semibold text-sm mt-1 ${s.color}`}>{s.value}</p>
+                  </div>
+                ))}
+              </div>
+            )}
+            <div className="overflow-x-auto rounded-xl border border-navy-light">
+              <table className="w-full text-sm">
+                <thead className="bg-navy-primary text-muted text-xs uppercase">
+                  <tr>
+                    <th className="text-left px-4 py-3">Worker</th>
+                    <th className="text-left px-4 py-3">Status</th>
+                    <th className="text-left px-4 py-3">OT</th>
+                    <th className="text-right px-4 py-3">Earned</th>
+                    <th className="text-right px-4 py-3">Paid</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {log.attendance.map((row) => (
+                    <tr key={row.id} className="border-t border-navy-light/50">
+                      <td className="px-4 py-3">
+                        <p className="text-offwhite font-medium">{row.worker_name}</p>
+                        <p className="text-muted text-xs">{row.role}</p>
+                      </td>
+                      <td className="px-4 py-3">
+                        <span className={`text-xs px-2 py-0.5 rounded-full border ${
+                          row.status === 'present' ? 'border-green-500/30 text-green-400 bg-green-500/10'
+                            : row.status === 'half' ? 'border-amber-500/30 text-amber-400 bg-amber-500/10'
+                              : 'border-red-500/30 text-red-400 bg-red-500/10'
+                        }`}>
+                          {STATUS_LABELS[row.status] ?? row.status}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3 font-mono text-muted">{row.overtime_hours}h</td>
+                      <td className="px-4 py-3 font-mono text-offwhite text-right">{formatLKR(row.total_earned_lkr)}</td>
+                      <td className="px-4 py-3 text-right">
+                        {row.is_paid
+                          ? <span className="text-green-400 text-xs">Paid</span>
+                          : <span className="text-muted text-xs">Unpaid</span>}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </>
+        )}
+      </div>
 
       {/* Same-day bills */}
       <Section title="Bills & Receipts" count={log.bills?.length} empty={!hasBills}>
@@ -226,11 +255,20 @@ export default function DailyLogDetailPage() {
         </div>
       </Section>
 
-      {!hasAttendance && !hasBills && !hasPhotos && (
-        <div className="text-center py-8 text-muted text-sm border border-dashed border-navy-light rounded-xl">
-          No attendance, bills, or progress photos recorded for this date yet.
+      {!hasBills && !hasPhotos && (
+        <div className="text-center py-6 text-muted text-sm border border-dashed border-navy-light rounded-xl">
+          No bills or progress photos for this date yet.
         </div>
       )}
+
+      <LogAttendanceModal
+        siteId={siteId}
+        isOpen={showAttendance}
+        onClose={() => setShowAttendance(false)}
+        defaultDate={log.log_date}
+        lockDate
+        existingAttendance={log.attendance}
+      />
     </div>
   )
 }
