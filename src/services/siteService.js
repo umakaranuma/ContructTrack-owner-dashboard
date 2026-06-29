@@ -29,6 +29,9 @@ export const siteService = {
   getDailyLogs: (siteId, params = {}) =>
     api.get(`/api/sites/${siteId}/daily-logs/`, { params }).then((r) => r.data.result),
 
+  getDailyLogDetail: (siteId, logId) =>
+    api.get(`/api/sites/${siteId}/daily-logs/${logId}/`).then((r) => r.data.result),
+
   // Attendance records
   getAttendance: (siteId, params = {}) =>
     api.get(`/api/sites/${siteId}/attendance/`, { params }).then((r) => r.data.result),

@@ -17,6 +17,7 @@ import Login from './pages/Login'
 import Overview from './pages/Overview'
 import Sites from './pages/Sites'
 import SiteDetail from './pages/SiteDetail'
+import DailyLogDetail from './pages/DailyLogDetail'
 import Managers from './pages/Managers'
 import ManagerDetail from './pages/ManagerDetail'
 import Finances from './pages/Finances'
@@ -61,6 +62,7 @@ export default function App() {
         <Route index element={<Overview />} />
         <Route path="sites" element={<Sites />} />
         <Route path="sites/:siteId" element={<SiteDetail />} />
+        <Route path="sites/:siteId/logs/:logId" element={<DailyLogDetail />} />
         <Route path="managers" element={<Managers />} />
         <Route path="managers/:managerId" element={<ManagerDetail />} />
         <Route path="finances" element={<Finances />} />

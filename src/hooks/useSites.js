@@ -54,6 +54,14 @@ export function useDailyLogs(siteId, params = {}, options = {}) {
   })
 }
 
+export function useDailyLogDetail(siteId, logId) {
+  return useQuery({
+    queryKey: ['daily-log', siteId, logId],
+    queryFn: () => siteService.getDailyLogDetail(siteId, logId),
+    enabled: !!siteId && !!logId,
+  })
+}
+
 export function useAttendance(siteId, params = {}, options = {}) {
   return useQuery({
     queryKey: ['attendance', siteId, params],

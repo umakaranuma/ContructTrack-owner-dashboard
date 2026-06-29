@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useParams, Link } from 'react-router-dom'
+import { useParams, Link, useNavigate } from 'react-router-dom'
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   PieChart, Pie, Cell, Legend,
@@ -8,7 +8,6 @@ import { useSite, useDailyLogs, useAttendance, useBills, useProgressPhotos, useS
 import StageStepper from '../components/sites/StageStepper'
 import BillPhotoGrid from '../components/sites/BillPhotoGrid'
 import ProgressPhotoWall from '../components/sites/ProgressPhotoWall'
-import DailyLogDetail from '../components/sites/DailyLogDetail'
 import AddBillModal from '../components/sites/AddBillModal'
 import AddDailyLogModal from '../components/sites/AddDailyLogModal'
 import LogAttendanceModal from '../components/sites/LogAttendanceModal'
@@ -17,6 +16,7 @@ import Badge from '../components/ui/Badge'
 import LoadingSpinner from '../components/ui/LoadingSpinner'
 import DataTable from '../components/ui/DataTable'
 import { stageLabel } from '../constants/stages'
+import { optionLabel, TOMORROW_STATUS_OPTIONS } from '../constants/dailyLogOptions'
 import { DUMMY_SITES } from '../components/overview/SiteGrid'
 
 // ─── SiteDetail Page ───────────────────────────────────────────────────────────
@@ -76,8 +76,8 @@ function BudgetTooltip({ active, payload, label }) {
 
 export default function SiteDetail() {
   const { siteId } = useParams()
+  const navigate = useNavigate()
   const [activeTab, setActiveTab] = useState('overview')
-  const [selectedLog, setSelectedLog] = useState(null)
   const [showAddBill, setShowAddBill] = useState(false)
   const [showAddLog, setShowAddLog] = useState(false)
   const [showAttendance, setShowAttendance] = useState(false)
@@ -282,28 +282,31 @@ export default function SiteDetail() {
           <div className="bg-navy-secondary border border-navy-light rounded-xl overflow-hidden">
             <DataTable
               columns={[
-                { key: 'date',        label: 'Date',            render: v => <span className="font-mono text-sm text-muted">{v}</span> },
-                { key: 'stage',       label: 'Stage',           render: v => <span className="text-offwhite text-sm">{stageLabel(v)}</span> },
-                { key: 'manager',     label: 'Manager',         render: v => <span className="text-offwhite text-sm">{v}</span> },
-                { key: 'materials_in', label: 'Materials In',   render: v => <span className="font-mono text-green-400 text-sm">{v} items</span> },
-                { key: 'materials_out', label: 'Materials Out', render: v => <span className="font-mono text-amber-400 text-sm">{v} items</span> },
-                { key: 'workers',     label: 'Workers Present', render: v => <span className="font-mono text-offwhite text-sm">{v}</span> },
-                { key: 'total_wage',  label: 'Total Wage',      render: v => <span className="font-mono text-gold text-sm font-semibold">{formatLKR(v)}</span> },
+                { key: 'date', label: 'Date', render: v => <span className="font-mono text-sm text-muted">{v}</span> },
+                { key: 'stage', label: 'Stage', render: v => <span className="text-offwhite text-sm">{stageLabel(v)}</span> },
+                { key: 'work_done_today', label: 'Work Summary', render: v => (
+                  <span className="text-muted text-sm line-clamp-2 max-w-xs">{v || '—'}</span>
+                )},
+                { key: 'tomorrow_status', label: 'Tomorrow', render: v => (
+                  <span className="text-offwhite text-xs">{optionLabel(v, TOMORROW_STATUS_OPTIONS)}</span>
+                )},
+                { key: 'manager', label: 'Submitted by', render: v => <span className="text-offwhite text-sm">{v ?? '—'}</span> },
                 { key: 'id', label: '', render: (_, row) => (
-                  <button
-                    onClick={(e) => { e.stopPropagation(); setSelectedLog(row) }}
+                  <Link
+                    to={`/dashboard/sites/${siteId}/logs/${row.id}`}
+                    onClick={(e) => e.stopPropagation()}
                     className="text-xs text-muted hover:text-gold transition-colors"
                   >
-                    Details →
-                  </button>
+                    View details →
+                  </Link>
                 )},
               ]}
               data={logs}
               isLoading={logsLoading}
               keyField="id"
-              onRowClick={(row) => setSelectedLog(row)}
+              onRowClick={(row) => navigate(`/dashboard/sites/${siteId}/logs/${row.id}`)}
               emptyTitle="No daily logs"
-              emptyDescription="Managers submit logs through the mobile app."
+              emptyDescription="Add a daily log or wait for managers to submit from the mobile app."
             />
           </div>
         </div>
@@ -408,7 +411,6 @@ export default function SiteDetail() {
         </div>
         )
       )}
-      <DailyLogDetail log={selectedLog} onClose={() => setSelectedLog(null)} />
       <AddBillModal siteId={siteId} isOpen={showAddBill} onClose={() => setShowAddBill(false)} />
       <AddDailyLogModal
         siteId={siteId}
