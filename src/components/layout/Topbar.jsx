@@ -39,7 +39,7 @@ export default function Topbar() {
 
   return (
     <>
-      <header className="fixed top-0 left-64 right-0 h-16 bg-navy-primary/95 backdrop-blur-sm border-b border-navy-light z-20 flex items-center px-6 gap-4">
+      <header className="sticky top-0 h-16 bg-navy-primary/95 backdrop-blur-sm border-b border-navy-light z-20 flex items-center px-6 gap-4 flex-shrink-0">
         {/* Page title */}
         <div className="flex-1 min-w-0">
           <h1 className="font-syne font-semibold text-offwhite text-lg leading-none">{pageTitle}</h1>
