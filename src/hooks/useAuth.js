@@ -16,12 +16,19 @@ export function useAuth() {
     clearError()
     try {
       const { data } = await api.post('/api/auth/login/', { email, password })
-      // Expected response: { user: {...}, access: "...", refresh: "..." }
-      localStorage.setItem('ct_refresh_token', data.refresh)
-      setAuth({ user: data.user, token: data.access })
+      // API envelope: { is_success, message, result: { access_token, refresh_token, user, tenant_id } }
+      const result = data.result
+      localStorage.setItem('ct_token', result.access_token)
+      localStorage.setItem('ct_refresh_token', result.refresh_token)
+      localStorage.setItem('ct_tenant_id', result.tenant_id ?? '')
+      setAuth({ user: result.user, token: result.access_token })
       navigate('/dashboard')
     } catch (err) {
-      const message = err.response?.data?.detail || err.message || 'Login failed. Please check your credentials.'
+      const message =
+        err.response?.data?.message ||
+        err.response?.data?.detail ||
+        err.message ||
+        'Login failed. Please check your credentials.'
       setError(message)
     } finally {
       setLoading(false)

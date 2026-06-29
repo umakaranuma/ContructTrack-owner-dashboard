@@ -1,10 +1,9 @@
 /**
  * App.jsx — root routing for the Owner Dashboard.
+ * BrowserRouter and QueryClientProvider are provided by main.jsx — do NOT add them here.
  * Protected routes require a valid JWT (checked via authStore).
- * The layout wraps all authenticated pages with Sidebar + Topbar.
  */
-import { BrowserRouter, Routes, Route, Navigate, Outlet } from 'react-router-dom'
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { Routes, Route, Navigate, Outlet } from 'react-router-dom'
 import useAuthStore from './store/authStore'
 
 // Layout
@@ -22,26 +21,16 @@ import Finances from './pages/Finances'
 import Reports from './pages/Reports'
 import Settings from './pages/Settings'
 
-const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      staleTime: 30_000,       // 30 seconds before refetch
-      retry: 1,
-      refetchOnWindowFocus: false,
-    },
-  },
-})
-
 // ─── Protected Layout ──────────────────────────────────────────────────────────
 // Renders sidebar + topbar around all authenticated pages.
-// Redirects to /login if not authenticated.
+// Redirects to /login if no valid token in store.
 function DashboardLayout() {
   const { isAuthenticated } = useAuthStore()
 
   if (!isAuthenticated) return <Navigate to="/login" replace />
 
   return (
-    <div className="flex h-screen bg-navy overflow-hidden">
+    <div className="flex h-screen overflow-hidden" style={{ backgroundColor: '#0A1628' }}>
       <Sidebar />
       <div className="flex flex-col flex-1 overflow-hidden">
         <Topbar />
@@ -49,7 +38,7 @@ function DashboardLayout() {
           <Outlet />
         </main>
       </div>
-      {/* Alert drawer — slides in from right, triggered by Topbar bell */}
+      {/* Alert drawer — slides in from the right, triggered by Topbar bell icon */}
       <AlertDrawer />
     </div>
   )
@@ -57,28 +46,24 @@ function DashboardLayout() {
 
 export default function App() {
   return (
-    <QueryClientProvider client={queryClient}>
-      <BrowserRouter>
-        <Routes>
-          {/* Public */}
-          <Route path="/login" element={<Login />} />
+    <Routes>
+      {/* Public — accessible without login */}
+      <Route path="/login" element={<Login />} />
 
-          {/* Protected dashboard routes */}
-          <Route path="/dashboard" element={<DashboardLayout />}>
-            <Route index element={<Overview />} />
-            <Route path="sites" element={<Sites />} />
-            <Route path="sites/:siteId" element={<SiteDetail />} />
-            <Route path="managers" element={<Managers />} />
-            <Route path="finances" element={<Finances />} />
-            <Route path="reports" element={<Reports />} />
-            <Route path="settings" element={<Settings />} />
-          </Route>
+      {/* Protected dashboard — all child routes require auth */}
+      <Route path="/dashboard" element={<DashboardLayout />}>
+        <Route index element={<Overview />} />
+        <Route path="sites" element={<Sites />} />
+        <Route path="sites/:siteId" element={<SiteDetail />} />
+        <Route path="managers" element={<Managers />} />
+        <Route path="finances" element={<Finances />} />
+        <Route path="reports" element={<Reports />} />
+        <Route path="settings" element={<Settings />} />
+      </Route>
 
-          {/* Default redirect */}
-          <Route path="/" element={<Navigate to="/dashboard" replace />} />
-          <Route path="*" element={<Navigate to="/dashboard" replace />} />
-        </Routes>
-      </BrowserRouter>
-    </QueryClientProvider>
+      {/* Redirect root and unknown paths to login */}
+      <Route path="/" element={<Navigate to="/login" replace />} />
+      <Route path="*" element={<Navigate to="/login" replace />} />
+    </Routes>
   )
 }
