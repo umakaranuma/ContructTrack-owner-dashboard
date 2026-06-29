@@ -16,6 +16,31 @@ const ROLE_SUGGESTIONS = [
 
 const EMPTY_WORKER = { full_name: '', role: 'labourer', daily_rate_lkr: '' }
 
+function buildWorkerRecord(worker, existing) {
+  // Saved attendance for this day → use that day's rate; otherwise worker creation/roster rate
+  const rate = existing != null && existing.daily_rate_lkr != null && existing.daily_rate_lkr !== ''
+    ? existing.daily_rate_lkr
+    : worker?.daily_rate_lkr ?? ''
+  return {
+    status: existing?.status ?? 'present',
+    overtime_hours: existing?.overtime_hours ?? 0,
+    daily_rate_lkr: rate,
+    roster_rate_lkr: worker?.daily_rate_lkr ?? '',
+  }
+}
+
+function displayRate(rec, worker) {
+  const raw = rec?.daily_rate_lkr
+  if (raw !== '' && raw != null) return raw
+  return worker?.daily_rate_lkr ?? ''
+}
+
+function rateWasEdited(rec, worker) {
+  const shown = Number(displayRate(rec, worker))
+  const roster = Number(worker?.daily_rate_lkr ?? 0)
+  return shown > 0 && roster > 0 && shown !== roster
+}
+
 export default function LogAttendanceModal({
   siteId,
   isOpen,
@@ -69,10 +94,7 @@ export default function LogAttendanceModal({
     for (const w of workers) {
       const wid = String(w.id)
       const ex = existingByWorker[wid]
-      nextRecords[wid] = {
-        status: ex?.status ?? 'present',
-        overtime_hours: ex?.overtime_hours ?? 0,
-      }
+      nextRecords[wid] = buildWorkerRecord(w, ex)
       nextIncluded[wid] = !!ex
     }
 
@@ -91,7 +113,7 @@ export default function LogAttendanceModal({
       for (const w of workers) {
         const wid = String(w.id)
         if (!next[wid]) {
-          next[wid] = { status: 'present', overtime_hours: 0 }
+          next[wid] = buildWorkerRecord(w, null)
           changed = true
         }
       }
@@ -137,7 +159,11 @@ export default function LogAttendanceModal({
 
   const setWorker = (id, field, val) => {
     const wid = String(id)
-    setRecords((r) => ({ ...r, [wid]: { ...r[wid], status: r[wid]?.status ?? 'present', overtime_hours: r[wid]?.overtime_hours ?? 0, [field]: val } }))
+    const worker = workers.find((w) => String(w.id) === wid)
+    setRecords((r) => {
+      const prev = r[wid] ?? buildWorkerRecord(worker, null)
+      return { ...r, [wid]: { ...prev, [field]: val } }
+    })
     setIncluded((inc) => ({ ...inc, [wid]: true }))
   }
 
@@ -170,7 +196,8 @@ export default function LogAttendanceModal({
     const nextInc = { ...included }
     for (const w of targetWorkers) {
       const wid = String(w.id)
-      next[wid] = { ...next[wid], status, overtime_hours: next[wid]?.overtime_hours ?? 0 }
+      const prev = next[wid] ?? buildWorkerRecord(w, null)
+      next[wid] = { ...prev, status, overtime_hours: prev.overtime_hours ?? 0 }
       nextInc[wid] = true
     }
     setRecords(next)
@@ -218,7 +245,7 @@ export default function LogAttendanceModal({
       const id = created?.id
       if (id) {
         const wid = String(id)
-        setRecords((r) => ({ ...r, [wid]: { status: 'present', overtime_hours: 0 } }))
+        setRecords((r) => ({ ...r, [wid]: buildWorkerRecord({ daily_rate_lkr: rate }, { status: 'present', overtime_hours: 0 }) }))
         setIncluded((inc) => ({ ...inc, [wid]: true }))
       }
       setNewWorker(EMPTY_WORKER)
@@ -236,14 +263,26 @@ export default function LogAttendanceModal({
       setError('Select at least one worker for this day, or add a new worker.')
       return
     }
+    for (const w of selected) {
+      const rate = Number(displayRate(records[String(w.id)], w))
+      if (!rate || rate <= 0) {
+        setError(`Enter a valid daily rate (LKR) for ${w.full_name}.`)
+        return
+      }
+    }
     const payload = {
       log_date: logDate,
       is_rain_day: isRainDay,
-      records: selected.map((w) => ({
-        worker_id: w.id,
-        status: records[String(w.id)]?.status ?? 'present',
-        overtime_hours: Number(records[String(w.id)]?.overtime_hours ?? 0),
-      })),
+      records: selected.map((w) => {
+        const wid = String(w.id)
+        const rec = records[wid]
+        return {
+          worker_id: w.id,
+          status: rec?.status ?? 'present',
+          overtime_hours: Number(rec?.overtime_hours ?? 0),
+          daily_rate_lkr: Number(displayRate(rec, w)),
+        }
+      }),
     }
     try {
       await submitAttendance.mutateAsync(payload)
@@ -395,7 +434,7 @@ export default function LogAttendanceModal({
             </div>
 
             <p className="text-muted text-xs mb-2">
-              Tick workers who were on site this day. Unticked workers are excluded from this submission.
+              Daily rate starts from each worker&apos;s saved rate when they were added. Edit only if it changed for this day — that amount is saved for this date only.
             </p>
 
             <div className="border border-navy-light rounded-xl overflow-hidden mb-5 max-h-[340px] overflow-y-auto">
@@ -405,8 +444,8 @@ export default function LogAttendanceModal({
                     <th className="text-left px-3 py-3 w-10">On site</th>
                     <th className="text-left px-3 py-3">Worker</th>
                     <th className="text-left px-3 py-3">Status</th>
+                    <th className="text-left px-3 py-3">Daily rate</th>
                     <th className="text-left px-3 py-3">OT (hrs)</th>
-                    <th className="text-right px-3 py-3 hidden sm:table-cell">Rate</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -445,6 +484,25 @@ export default function LogAttendanceModal({
                           </select>
                         </td>
                         <td className="px-3 py-3" onClick={(e) => e.stopPropagation()}>
+                          <div>
+                            <input
+                              type="number"
+                              step="100"
+                              min="0"
+                              disabled={!isOn}
+                              className="input w-24 text-xs font-mono"
+                              placeholder="LKR"
+                              value={displayRate(records[wid], w)}
+                              onChange={(e) => setWorker(wid, 'daily_rate_lkr', e.target.value)}
+                            />
+                            {isOn && rateWasEdited(records[wid], w) && (
+                              <p className="text-muted text-[10px] mt-0.5">
+                                Roster: {Number(w.daily_rate_lkr).toLocaleString()}
+                              </p>
+                            )}
+                          </div>
+                        </td>
+                        <td className="px-3 py-3" onClick={(e) => e.stopPropagation()}>
                           <input
                             type="number"
                             step="0.5"
@@ -454,9 +512,6 @@ export default function LogAttendanceModal({
                             value={records[wid]?.overtime_hours ?? 0}
                             onChange={(e) => setWorker(wid, 'overtime_hours', e.target.value)}
                           />
-                        </td>
-                        <td className="px-3 py-3 text-right font-mono text-muted text-xs hidden sm:table-cell">
-                          {Number(w.daily_rate_lkr).toLocaleString()}
                         </td>
                       </tr>
                     )

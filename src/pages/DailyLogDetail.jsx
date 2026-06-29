@@ -172,6 +172,7 @@ export default function DailyLogDetailPage() {
                   <tr>
                     <th className="text-left px-4 py-3">Worker</th>
                     <th className="text-left px-4 py-3">Status</th>
+                    <th className="text-right px-4 py-3">Daily rate</th>
                     <th className="text-left px-4 py-3">OT</th>
                     <th className="text-right px-4 py-3">Earned</th>
                     <th className="text-right px-4 py-3">Paid</th>
@@ -193,6 +194,7 @@ export default function DailyLogDetailPage() {
                           {STATUS_LABELS[row.status] ?? row.status}
                         </span>
                       </td>
+                      <td className="px-4 py-3 font-mono text-muted text-right">{formatLKR(row.daily_rate_lkr)}</td>
                       <td className="px-4 py-3 font-mono text-muted">{row.overtime_hours}h</td>
                       <td className="px-4 py-3 font-mono text-offwhite text-right">{formatLKR(row.total_earned_lkr)}</td>
                       <td className="px-4 py-3 text-right">
