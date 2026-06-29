@@ -15,58 +15,84 @@ export const DUMMY_MANAGERS = [
   { id: 'm5', name: 'Kasun Fernando',  email: 'kasun.f@ct.lk',         ref_code: 'MGR-E8T2', sites: [],                         last_active: new Date(Date.now() - 1000*60*60*48).toISOString(), status: 'inactive' },
 ]
 
-export default function ManagerTable({ managers, isLoading, onViewDetail }) {
+export default function ManagerTable({ managers, isLoading, onView, onViewDetail }) {
   const data = managers ?? DUMMY_MANAGERS
+  // Support both onView (Managers.jsx) and onViewDetail (legacy) prop names
+  const handleView = onView ?? onViewDetail
 
   const columns = [
     {
+      // Backend returns 'name' (alias) or 'full_name' — normalise to display name
       key: 'name',
       label: 'Manager',
-      render: (val, row) => (
-        <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-full bg-gold/15 border border-gold/30 flex items-center justify-center flex-shrink-0">
-            <span className="font-syne font-bold text-gold text-xs">{val.charAt(0)}</span>
+      render: (val, row) => {
+        const displayName = val ?? row.full_name ?? '—'
+        return (
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 rounded-full bg-gold/15 border border-gold/30 flex items-center justify-center flex-shrink-0">
+              <span className="font-syne font-bold text-gold text-xs">
+                {displayName.charAt(0).toUpperCase()}
+              </span>
+            </div>
+            <div>
+              <p className="text-offwhite font-medium text-sm">{displayName}</p>
+              <p className="text-muted text-xs">{row.email}</p>
+            </div>
           </div>
-          <div>
-            <p className="text-offwhite font-medium text-sm">{val}</p>
-            <p className="text-muted text-xs">{row.email}</p>
-          </div>
-        </div>
-      ),
+        )
+      },
     },
     {
+      // Backend returns 'ref_code' (alias) or 'reference_code'
       key: 'ref_code',
       label: 'Ref Code',
-      render: (val) => <span className="font-mono text-gold text-sm">{val}</span>,
-    },
-    {
-      key: 'sites',
-      label: 'Assigned Sites',
-      render: (val) => (
-        <div className="flex flex-wrap gap-1">
-          {val.length ? val.map((s) => (
-            <span key={s} className="text-xs bg-navy-light/50 text-muted px-2 py-0.5 rounded">{s}</span>
-          )) : <span className="text-muted text-xs">None assigned</span>}
-        </div>
-      ),
-    },
-    {
-      key: 'last_active',
-      label: 'Last Active',
-      render: (val) => (
-        <span className="font-mono text-muted text-xs">
-          {formatDistanceToNow(new Date(val), { addSuffix: true })}
+      render: (val, row) => (
+        <span className="font-mono text-gold text-sm">
+          {val ?? row.reference_code ?? '—'}
         </span>
       ),
     },
     {
+      key: 'sites',
+      label: 'Assigned Sites',
+      render: (val) => {
+        const list = Array.isArray(val) ? val : []
+        return (
+          <div className="flex flex-wrap gap-1">
+            {list.length ? list.map((s) => (
+              <span key={s} className="text-xs bg-navy-light/50 text-muted px-2 py-0.5 rounded">{s}</span>
+            )) : <span className="text-muted text-xs">None assigned</span>}
+          </div>
+        )
+      },
+    },
+    {
+      key: 'last_active',
+      label: 'Last Active',
+      render: (val) => {
+        if (!val) return <span className="text-muted text-xs font-mono">—</span>
+        try {
+          return (
+            <span className="font-mono text-muted text-xs">
+              {formatDistanceToNow(new Date(val), { addSuffix: true })}
+            </span>
+          )
+        } catch {
+          return <span className="text-muted text-xs font-mono">—</span>
+        }
+      },
+    },
+    {
       key: 'status',
       label: 'Status',
-      render: (val) => (
-        <Badge variant={val === 'active' ? 'success' : 'muted'}>
-          {val}
-        </Badge>
-      ),
+      render: (val, row) => {
+        const status = val ?? (row.is_active ? 'active' : 'inactive')
+        return (
+          <Badge variant={status === 'active' ? 'success' : 'muted'}>
+            {status}
+          </Badge>
+        )
+      },
     },
     {
       key: 'id',
@@ -74,7 +100,7 @@ export default function ManagerTable({ managers, isLoading, onViewDetail }) {
       render: (val, row) => (
         <div className="flex gap-2">
           <button
-            onClick={(e) => { e.stopPropagation(); onViewDetail?.(row) }}
+            onClick={(e) => { e.stopPropagation(); handleView?.(row) }}
             className="text-xs px-2.5 py-1 rounded bg-navy-light/40 hover:bg-gold/10 text-muted hover:text-gold border border-navy-light hover:border-gold/30 transition-colors"
           >
             View

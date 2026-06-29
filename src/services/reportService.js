@@ -29,7 +29,7 @@ export const reportService = {
 
   // Spend by site chart data
   getSpendBySite: (params = {}) =>
-    api.get('/api/finances/spend-by-site/', { params }).then((r) => r.data.result),
+    api.get('/api/finances/by-site/', { params }).then((r) => r.data.result),
 
   // Bill log (filterable)
   getBillLog: (params = {}) =>

@@ -43,8 +43,18 @@ function yTickFormat(val) {
   return val
 }
 
+// Normalise backend spend-by-site records into the shape Recharts expects
+function normaliseSpend(d) {
+  return {
+    site:      d.site      ?? d.site_name ?? '',
+    materials: d.materials ?? d.material_spend_lkr ?? 0,
+    wages:     d.wages     ?? d.wage_spend_lkr     ?? 0,
+  }
+}
+
 export default function SpendChart({ data, isLoading, selectedMonth, onMonthChange }) {
-  const chartData = data ?? DUMMY_SPEND
+  const raw = data ?? DUMMY_SPEND
+  const chartData = Array.isArray(raw) ? raw.map(normaliseSpend) : DUMMY_SPEND
   const currentMonth = new Date().getMonth()
 
   return (

@@ -38,18 +38,34 @@ const columns = [
   },
 ]
 
+// Normalise a bill record from the backend into the shape this component expects
+function normaliseBill(b) {
+  return {
+    id:        b.id,
+    date:      b.date      ?? b.log_date ?? '',
+    site:      b.site_name ?? b.site     ?? '',
+    supplier:  b.supplier  ?? b.supplier_name ?? '',
+    material:  b.material  ?? b.material_type ?? '',
+    qty:       b.qty       ?? b.quantity ?? 0,
+    unit:      b.unit      ?? '',
+    amount:    b.amount    ?? b.total_amount_lkr ?? 0,
+    has_photo: b.has_photo ?? !!b.bill_photo_url,
+  }
+}
+
 export default function BillLogTable({ bills, isLoading }) {
   const [filters, setFilters] = useState({ site: '', supplier: '', material: '' })
-  const data = bills ?? DUMMY_BILLS
+  const rawData = bills ?? DUMMY_BILLS
+  const data = rawData.map(normaliseBill)
 
   const filtered = data.filter((b) => {
-    if (filters.site && !b.site.toLowerCase().includes(filters.site.toLowerCase())) return false
-    if (filters.supplier && !b.supplier.toLowerCase().includes(filters.supplier.toLowerCase())) return false
+    if (filters.site && !(b.site ?? '').toLowerCase().includes(filters.site.toLowerCase())) return false
+    if (filters.supplier && !(b.supplier ?? '').toLowerCase().includes(filters.supplier.toLowerCase())) return false
     if (filters.material && b.material !== filters.material) return false
     return true
   })
 
-  const totalAmount = filtered.reduce((s, b) => s + b.amount, 0)
+  const totalAmount = filtered.reduce((s, b) => s + Number(b.amount), 0)
 
   return (
     <div>

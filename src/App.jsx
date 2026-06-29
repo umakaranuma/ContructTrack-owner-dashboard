@@ -3,7 +3,7 @@
  * BrowserRouter and QueryClientProvider are provided by main.jsx — do NOT add them here.
  * Protected routes require a valid JWT (checked via authStore).
  */
-import { Routes, Route, Navigate, Outlet } from 'react-router-dom'
+import { Routes, Route, Navigate, Outlet, useLocation } from 'react-router-dom'
 import useAuthStore from './store/authStore'
 
 // Layout
@@ -27,6 +27,7 @@ import Settings from './pages/Settings'
 // Redirects to /login if no valid token in store.
 function DashboardLayout() {
   const { isAuthenticated } = useAuthStore()
+  const location = useLocation()
 
   if (!isAuthenticated) return <Navigate to="/login" replace />
 
@@ -36,7 +37,8 @@ function DashboardLayout() {
       <div className="flex flex-col flex-1 overflow-hidden">
         <Topbar />
         <main className="flex-1 overflow-y-auto p-6">
-          <ErrorBoundary>
+          {/* key resets the error boundary on every route change */}
+          <ErrorBoundary key={location.pathname}>
             <Outlet />
           </ErrorBoundary>
         </main>

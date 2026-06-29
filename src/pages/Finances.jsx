@@ -139,13 +139,24 @@ export default function Finances() {
         </div>
 
         {activeTab === 'bills' && (
-          <BillLogTable data={billLog} isLoading={billLoading} month={selectedMonth} />
+          <BillLogTable
+            bills={Array.isArray(billLog) ? billLog : billLog?.results}
+            isLoading={billLoading}
+            month={selectedMonth}
+          />
         )}
         {activeTab === 'wages' && (
-          <WageLedger data={wages} isLoading={wageLoading} month={selectedMonth} />
+          <WageLedger
+            workers={Array.isArray(wages) ? wages : wages?.results}
+            isLoading={wageLoading}
+            month={selectedMonth}
+          />
         )}
         {activeTab === 'materials' && (
-          <MaterialTable data={billLog} isLoading={billLoading} />
+          <MaterialTable
+            data={Array.isArray(billLog) ? billLog : billLog?.results}
+            isLoading={billLoading}
+          />
         )}
       </div>
     </div>
