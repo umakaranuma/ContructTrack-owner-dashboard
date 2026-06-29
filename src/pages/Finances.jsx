@@ -83,9 +83,9 @@ export default function Finances() {
             value={selectedSite}
             onChange={setSelectedSite}
             label="Filter by site"
-            className="w-52"
+            className="w-full sm:w-56"
           />
-          <div>
+          <div className="w-full sm:w-44">
             <label className="form-label">Month</label>
             <select
               value={selectedMonth}

@@ -111,7 +111,7 @@ export default function Reports() {
           value={selectedSite}
           onChange={setSelectedSite}
           label="Filter by site"
-          className="w-52"
+          className="w-full sm:w-56"
         />
       </div>
 

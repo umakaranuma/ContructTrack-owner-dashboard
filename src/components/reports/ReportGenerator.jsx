@@ -71,6 +71,8 @@ export default function ReportGenerator({ report, onClose, defaultSiteId = '' })
             onChange={setSiteId}
             label="Site"
             className="sm:col-span-2"
+            showAllOption
+            allOptionLabel="All sites"
           />
           <div>
             <label className="form-label">From date</label>

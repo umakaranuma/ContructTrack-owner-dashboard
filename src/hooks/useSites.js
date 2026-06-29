@@ -5,10 +5,12 @@ import { siteService } from '../services/siteService'
 // TanStack Query wrappers for site-related data fetching and mutations.
 // ─────────────────────────────────────────────────────────────────────────────
 
-export function useSites(params = {}) {
+export function useSites(params = {}, options = {}) {
   return useQuery({
     queryKey: ['sites', params],
     queryFn: () => siteService.getSites(params),
+    enabled: options.enabled !== false,
+    staleTime: 1000 * 30,
   })
 }
 
