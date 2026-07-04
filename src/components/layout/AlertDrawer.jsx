@@ -9,55 +9,6 @@ import LoadingSpinner from '../ui/LoadingSpinner'
 // Triggered by the bell icon in Topbar.
 // ─────────────────────────────────────────────────────────────────────────────
 
-// Dummy fallback alerts while backend isn't connected
-const DUMMY_ALERTS = [
-  {
-    id: '1',
-    type: 'material_cap',
-    severity: 'danger',
-    site_name: 'Colombo Phase 2',
-    message: 'Cement usage exceeded 95% of allocated budget',
-    created_at: new Date(Date.now() - 1000 * 60 * 8).toISOString(),
-    acknowledged: false,
-  },
-  {
-    id: '2',
-    type: 'missing_log',
-    severity: 'warning',
-    site_name: 'Kandy Residential',
-    message: 'No daily log submitted for 2026-06-28',
-    created_at: new Date(Date.now() - 1000 * 60 * 45).toISOString(),
-    acknowledged: false,
-  },
-  {
-    id: '3',
-    type: 'delivery_no_bill',
-    severity: 'warning',
-    site_name: 'Galle Fort Annex',
-    message: 'Delivery receipt uploaded without bill photo',
-    created_at: new Date(Date.now() - 1000 * 60 * 90).toISOString(),
-    acknowledged: true,
-  },
-  {
-    id: '4',
-    type: 'material_cap',
-    severity: 'danger',
-    site_name: 'Negombo Towers',
-    message: 'Steel rod consumption at 92% — approaching cap',
-    created_at: new Date(Date.now() - 1000 * 60 * 180).toISOString(),
-    acknowledged: false,
-  },
-  {
-    id: '5',
-    type: 'missing_log',
-    severity: 'warning',
-    site_name: 'Colombo Phase 2',
-    message: 'Attendance log incomplete — 3 workers unaccounted',
-    created_at: new Date(Date.now() - 1000 * 60 * 360).toISOString(),
-    acknowledged: true,
-  },
-]
-
 const TYPE_LABELS = {
   material_cap:    'Material Cap',
   missing_log:     'Missing Log',
@@ -74,7 +25,7 @@ export default function AlertDrawer({ isOpen, onClose }) {
   const { data, isLoading } = useAllAlerts()
 
   // API returns an array directly (r.data.result is already the array)
-  const alerts = Array.isArray(data) ? data : (data?.results ?? DUMMY_ALERTS)
+  const alerts = Array.isArray(data) ? data : (data?.results ?? [])
 
   // Trap keyboard
   useEffect(() => {

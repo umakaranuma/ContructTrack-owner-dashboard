@@ -9,62 +9,6 @@ import EmptyState from '../ui/EmptyState'
 // attendance count, manager info, and action buttons.
 // ─────────────────────────────────────────────────────────────────────────────
 
-// Dummy sites for when backend is not connected
-export const DUMMY_SITES = [
-  {
-    id: '1',
-    name: 'Colombo City Phase 2',
-    location: 'Colombo 07, Western Province',
-    stage: 'Columns',
-    material_usage_pct: 87,
-    workers_today: 34,
-    manager_name: 'Rajan Perera',
-    manager_last_seen: new Date(Date.now() - 1000 * 60 * 12).toISOString(),
-    monthly_spend: 4820000,
-    budget: 12000000,
-    status: 'active',
-  },
-  {
-    id: '2',
-    name: 'Kandy Residential Complex',
-    location: 'Kandy, Central Province',
-    stage: 'Slab',
-    material_usage_pct: 62,
-    workers_today: 21,
-    manager_name: 'Sunil Bandara',
-    manager_last_seen: new Date(Date.now() - 1000 * 60 * 5).toISOString(),
-    monthly_spend: 2340000,
-    budget: 8500000,
-    status: 'active',
-  },
-  {
-    id: '3',
-    name: 'Galle Fort Annex',
-    location: 'Galle, Southern Province',
-    stage: 'Roofing',
-    material_usage_pct: 95,
-    workers_today: 16,
-    manager_name: 'Nimal Jayasena',
-    manager_last_seen: new Date(Date.now() - 1000 * 60 * 60 * 2).toISOString(),
-    monthly_spend: 1870000,
-    budget: 6000000,
-    status: 'active',
-  },
-  {
-    id: '4',
-    name: 'Negombo Towers Block B',
-    location: 'Negombo, Western Province',
-    stage: 'Foundation',
-    material_usage_pct: 41,
-    workers_today: 28,
-    manager_name: 'Chamara Silva',
-    manager_last_seen: new Date(Date.now() - 1000 * 60 * 30).toISOString(),
-    monthly_spend: 980000,
-    budget: 15000000,
-    status: 'active',
-  },
-]
-
 function formatLKR(amount) {
   if (amount >= 1000000) return `LKR ${(amount / 1000000).toFixed(1)}M`
   if (amount >= 1000) return `LKR ${(amount / 1000).toFixed(0)}K`
@@ -103,7 +47,7 @@ function UsageBar({ pct }) {
 
 export default function SiteGrid({ sites, isLoading }) {
   const navigate = useNavigate()
-  const displaySites = sites ?? DUMMY_SITES
+  const displaySites = sites ?? []
 
   if (isLoading) {
     return (

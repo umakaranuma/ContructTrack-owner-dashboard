@@ -6,7 +6,6 @@ import CreateSiteModal from '../components/sites/CreateSiteModal'
 import DataTable from '../components/ui/DataTable'
 import { StageBadge } from '../components/ui/Badge'
 import Badge from '../components/ui/Badge'
-import { DUMMY_SITES } from '../components/overview/SiteGrid'
 
 // ─── Sites Page ────────────────────────────────────────────────────────────────
 // Displays all sites in table or grid view (toggle). "+ Create Site" opens modal.
@@ -73,9 +72,9 @@ export default function Sites() {
   const { data, isLoading } = useSites()
   const navigate = useNavigate()
 
-  const sites = data?.results ?? data ?? DUMMY_SITES
+  const sites = data?.results ?? (Array.isArray(data) ? data : [])
   const filtered = search
-    ? sites.filter(s => s.name.toLowerCase().includes(search.toLowerCase()) || s.location.toLowerCase().includes(search.toLowerCase()))
+    ? sites.filter(s => (s.name ?? '').toLowerCase().includes(search.toLowerCase()) || (s.location ?? '').toLowerCase().includes(search.toLowerCase()))
     : sites
 
   return (

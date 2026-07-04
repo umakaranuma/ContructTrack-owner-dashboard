@@ -7,11 +7,14 @@ import { useFinances } from '../hooks/useFinances'
 import SpendChart from '../components/finances/SpendChart'
 import BillLogTable from '../components/finances/BillLogTable'
 import WageLedger from '../components/finances/WageLedger'
+import ContractsSummary from '../components/finances/ContractsSummary'
 import LoadingSpinner from '../components/ui/LoadingSpinner'
 import SiteFilter from '../components/ui/SiteFilter'
 import { getRecentMonths } from '../utils/months'
+import { PERIOD_TYPES, getPeriodRange, getRecentYears } from '../utils/periods'
 
 const MONTHS = getRecentMonths(12)
+const YEARS  = getRecentYears(6)
 
 function formatLKR(n = 0) {
   return `LKR ${Number(n).toLocaleString('en-LK')}`
@@ -31,22 +34,30 @@ function SummaryCard({ label, value, change, accent }) {
   return (
     <div className={`card border p-5 ${accent ? 'border-gold/40' : 'border-white/5'}`}>
       <p className="text-muted text-xs uppercase tracking-widest mb-1">{label}</p>
-      <p className="text-2xl font-mono text-off-white mt-1">{value}</p>
-      {change && <div className="mt-1"><ChangeTag value={change} /></div>}
+      <p className="text-2xl font-mono text-offwhite mt-1">{value}</p>
+      {change && <div className="mt-2"><ChangeTag value={change} /></div>}
     </div>
   )
 }
 
 export default function Finances() {
+  const today = new Date().toISOString().split('T')[0]
+  const [periodType, setPeriodType]       = useState('month')
   const [selectedMonth, setSelectedMonth] = useState(MONTHS[0]?.value ?? '')
-  const [selectedSite, setSelectedSite] = useState('')
+  const [selectedDate, setSelectedDate]   = useState(today)   // day + week pickers
+  const [selectedYear, setSelectedYear]   = useState(YEARS[0])
+  const [selectedSite, setSelectedSite]   = useState('')
   const [activeTab, setActiveTab]         = useState('bills')
 
+  const periodRef = periodType === 'month' ? selectedMonth
+                  : periodType === 'year'  ? selectedYear
+                  : selectedDate
+
   const queryParams = useMemo(() => {
-    const p = { month: selectedMonth }
+    const p = { ...getPeriodRange(periodType, periodRef) }
     if (selectedSite) p.site_id = selectedSite
     return p
-  }, [selectedMonth, selectedSite])
+  }, [periodType, periodRef, selectedSite])
 
   const { data: summary, isLoading: sumLoading } = useFinances('summary', queryParams)
   const { data: bySite, isLoading: siteLoading }  = useFinances('by-site', queryParams)
@@ -64,12 +75,17 @@ export default function Finances() {
     active_sites: 0,
   }
 
-  const monthLabel = MONTHS.find(m => m.value === selectedMonth)?.label ?? selectedMonth
+  const monthLabel = periodType === 'month'
+    ? (MONTHS.find(m => m.value === selectedMonth)?.label ?? selectedMonth)
+    : periodType === 'year' ? selectedYear
+    : periodType === 'week' ? `Week of ${selectedDate}`
+    : selectedDate
 
   const tabs = [
-    { id: 'bills', label: 'Bill Log' },
-    { id: 'wages', label: 'Wage Ledger' },
+    { id: 'bills',     label: 'Bill Log' },
+    { id: 'wages',     label: 'Wage Ledger' },
     { id: 'materials', label: 'By Material' },
+    { id: 'contracts', label: 'Contracts & Subcontracts' },
   ]
 
   return (
@@ -79,7 +95,9 @@ export default function Finances() {
         <div>
           <h1 className="page-title">Finances</h1>
           <p className="text-muted text-sm mt-1">
-            {selectedSite ? 'Spend for selected site' : 'Consolidated spend across all sites'}
+            {activeTab === 'contracts'
+              ? (selectedSite ? 'Contract & subcontract data for selected site' : 'Contract & subcontract overview across all sites')
+              : (selectedSite ? 'Spend for selected site' : 'Consolidated spend across all sites')}
           </p>
         </div>
         <div className="flex flex-wrap items-end gap-3">
@@ -89,23 +107,70 @@ export default function Finances() {
             label="Filter by site"
             className="w-full sm:w-56"
           />
-          <div className="w-full sm:w-44">
-            <label className="form-label">Month</label>
-            <select
-              value={selectedMonth}
-              onChange={e => setSelectedMonth(e.target.value)}
-              className="input-field w-44"
-            >
-              {MONTHS.map(m => (
-                <option key={m.value} value={m.value}>{m.label}</option>
-              ))}
-            </select>
-          </div>
+          {activeTab !== 'contracts' && (
+            <>
+              <div className="w-full sm:w-32">
+                <label className="form-label">Period</label>
+                <select
+                  value={periodType}
+                  onChange={e => setPeriodType(e.target.value)}
+                  className="input-field w-full"
+                >
+                  {PERIOD_TYPES.map(p => (
+                    <option key={p.id} value={p.id}>{p.label}</option>
+                  ))}
+                </select>
+              </div>
+              <div className="w-full sm:w-44">
+                {periodType === 'month' && (
+                  <>
+                    <label className="form-label">Month</label>
+                    <select
+                      value={selectedMonth}
+                      onChange={e => setSelectedMonth(e.target.value)}
+                      className="input-field w-full"
+                    >
+                      {MONTHS.map(m => (
+                        <option key={m.value} value={m.value}>{m.label}</option>
+                      ))}
+                    </select>
+                  </>
+                )}
+                {periodType === 'year' && (
+                  <>
+                    <label className="form-label">Year</label>
+                    <select
+                      value={selectedYear}
+                      onChange={e => setSelectedYear(e.target.value)}
+                      className="input-field w-full"
+                    >
+                      {YEARS.map(y => (
+                        <option key={y} value={y}>{y}</option>
+                      ))}
+                    </select>
+                  </>
+                )}
+                {(periodType === 'day' || periodType === 'week') && (
+                  <>
+                    <label className="form-label">
+                      {periodType === 'day' ? 'Date' : 'Any day in the week'}
+                    </label>
+                    <input
+                      type="date"
+                      value={selectedDate}
+                      onChange={e => setSelectedDate(e.target.value)}
+                      className="input-field w-full"
+                    />
+                  </>
+                )}
+              </div>
+            </>
+          )}
         </div>
       </div>
 
-      {/* Summary cards */}
-      {sumLoading ? <LoadingSpinner label="Loading summary…" /> : (
+      {/* Summary cards — hidden on contracts tab */}
+      {activeTab !== 'contracts' && (sumLoading ? <LoadingSpinner label="Loading summary…" /> : (
         <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
           <SummaryCard
             label="Material Spend"
@@ -128,18 +193,20 @@ export default function Finances() {
             value={s.active_sites ?? 0}
           />
         </div>
+      ))}
+
+      {/* Spend by site chart — hidden when viewing contracts tab */}
+      {activeTab !== 'contracts' && (
+        <SpendChart
+          data={bySite}
+          isLoading={siteLoading}
+          monthLabel={monthLabel}
+        />
       )}
 
-      {/* Spend by site chart */}
-      <SpendChart
-        data={bySite}
-        isLoading={siteLoading}
-        monthLabel={monthLabel}
-      />
-
       {/* Tabs */}
-      <div className="card border border-white/5 p-5">
-        <div className="flex gap-1 border-b border-white/5 mb-5 -mx-1 px-1">
+      <div className="card border border-white/5 overflow-hidden">
+        <div className="flex gap-1 border-b border-white/5 px-5 pt-1">
           {tabs.map(t => (
             <button
               key={t.id}
@@ -147,7 +214,7 @@ export default function Finances() {
               className={`px-4 py-2.5 text-sm font-medium transition-colors border-b-2 -mb-px ${
                 activeTab === t.id
                   ? 'border-gold text-gold'
-                  : 'border-transparent text-muted hover:text-off-white'
+                  : 'border-transparent text-muted hover:text-offwhite'
               }`}
             >
               {t.label}
@@ -155,26 +222,31 @@ export default function Finances() {
           ))}
         </div>
 
-        {activeTab === 'bills' && (
-          <BillLogTable
-            bills={Array.isArray(billLog) ? billLog : billLog?.results}
-            isLoading={billLoading}
-            month={selectedMonth}
-          />
-        )}
-        {activeTab === 'wages' && (
-          <WageLedger
-            workers={Array.isArray(wages) ? wages : wages?.results}
-            isLoading={wageLoading}
-            month={selectedMonth}
-          />
-        )}
-        {activeTab === 'materials' && (
-          <MaterialTable
-            data={Array.isArray(billLog) ? billLog : billLog?.results}
-            isLoading={billLoading}
-          />
-        )}
+        <div className="p-5">
+          {activeTab === 'bills' && (
+            <BillLogTable
+              bills={Array.isArray(billLog) ? billLog : billLog?.results}
+              isLoading={billLoading}
+              month={selectedMonth}
+            />
+          )}
+          {activeTab === 'wages' && (
+            <WageLedger
+              workers={Array.isArray(wages) ? wages : wages?.results}
+              isLoading={wageLoading}
+              month={selectedMonth}
+            />
+          )}
+          {activeTab === 'materials' && (
+            <MaterialTable
+              data={Array.isArray(billLog) ? billLog : billLog?.results}
+              isLoading={billLoading}
+            />
+          )}
+          {activeTab === 'contracts' && (
+            <ContractsSummary siteId={selectedSite || null} />
+          )}
+        </div>
       </div>
     </div>
   )
@@ -201,7 +273,7 @@ function MaterialTable({ data, isLoading }) {
   }
 
   return (
-    <div className="overflow-x-auto -mx-1">
+    <div className="overflow-x-auto">
       <table className="w-full text-sm">
         <thead>
           <tr className="border-b border-white/5 text-muted text-xs uppercase tracking-wider">
@@ -215,7 +287,7 @@ function MaterialTable({ data, isLoading }) {
         <tbody>
           {rows.map(r => (
             <tr key={r.material} className="border-b border-white/5 hover:bg-white/2 transition-colors">
-              <td className="px-4 py-3 capitalize font-medium text-off-white">{r.material}</td>
+              <td className="px-4 py-3 capitalize font-medium text-offwhite">{r.material}</td>
               <td className="px-4 py-3 text-right font-mono">{r.qty.toLocaleString()}</td>
               <td className="px-4 py-3 text-right font-mono">{r.total.toLocaleString('en-LK')}</td>
               <td className="px-4 py-3 text-right font-mono">

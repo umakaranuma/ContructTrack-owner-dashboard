@@ -30,7 +30,7 @@ export default function WageDetail() {
       label: 'Worker',
       render: (_, row) => (
         <div>
-          <p className="text-off-white text-sm font-medium">{row.worker_name ?? row.worker?.name ?? '—'}</p>
+          <p className="text-offwhite text-sm font-medium">{row.worker_name ?? row.worker?.name ?? '—'}</p>
           <p className="text-muted text-xs">{row.worker_role ?? row.worker?.role ?? ''}</p>
         </div>
       ),
@@ -47,7 +47,7 @@ export default function WageDetail() {
     {
       key: 'daily_rate_lkr',
       label: 'Daily Rate',
-      render: (v) => <span className="font-mono text-sm text-off-white">{formatLKR(v)}</span>,
+      render: (v) => <span className="font-mono text-sm text-offwhite">{formatLKR(v)}</span>,
     },
     {
       key: 'total_earned_lkr',

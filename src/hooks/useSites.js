@@ -22,6 +22,14 @@ export function useSite(siteId, options = {}) {
   })
 }
 
+export function useSiteFinancials(siteId, options = {}) {
+  return useQuery({
+    queryKey: ['site-financials', siteId],
+    queryFn: () => siteService.getSiteFinancials(siteId),
+    enabled: !!siteId && options.enabled !== false,
+  })
+}
+
 export function useOverviewStats() {
   return useQuery({
     queryKey: ['overview-stats'],

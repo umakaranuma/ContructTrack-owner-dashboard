@@ -13,6 +13,10 @@ export const siteService = {
   getSite: (siteId) =>
     api.get(`/api/sites/${siteId}/`).then((r) => r.data.result),
 
+  // Real chart data: budget vs actual + material breakdown
+  getSiteFinancials: (siteId) =>
+    api.get(`/api/sites/${siteId}/financials/`).then((r) => r.data.result),
+
   // Create a new site
   createSite: (payload) =>
     api.post('/api/sites/', payload).then((r) => r.data.result),

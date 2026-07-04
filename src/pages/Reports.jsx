@@ -134,7 +134,7 @@ export default function Reports() {
                 <span className="text-3xl mt-0.5">{report.icon}</span>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-1 flex-wrap">
-                    <h3 className="font-semibold text-off-white">{report.title}</h3>
+                    <h3 className="font-semibold text-offwhite">{report.title}</h3>
                     {label && (
                       <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
                         locked ? 'bg-white/10 text-muted' : 'bg-gold/20 text-gold'
@@ -201,7 +201,7 @@ export default function Reports() {
               <tbody>
                 {history.map(item => (
                   <tr key={item.id} className="border-b border-white/5 hover:bg-white/2">
-                    <td className="px-4 py-3 text-off-white">{REPORT_TYPE_LABELS[item.report_type] ?? item.report_type}</td>
+                    <td className="px-4 py-3 text-offwhite">{REPORT_TYPE_LABELS[item.report_type] ?? item.report_type}</td>
                     <td className="px-4 py-3 text-muted">{item.site_name ?? 'All Sites'}</td>
                     <td className="px-4 py-3 font-mono text-muted text-xs">{item.date_from} → {item.date_to}</td>
                     <td className="px-4 py-3 uppercase text-muted text-xs">{item.format}</td>

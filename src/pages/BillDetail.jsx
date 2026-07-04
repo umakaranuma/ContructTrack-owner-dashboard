@@ -10,7 +10,7 @@ function DetailRow({ label, value, mono }) {
   return (
     <div className="flex justify-between gap-4 py-3 border-b border-white/5 last:border-0">
       <span className="text-muted text-sm">{label}</span>
-      <span className={`text-off-white text-sm text-right ${mono ? 'font-mono' : ''}`}>{value ?? '—'}</span>
+      <span className={`text-offwhite text-sm text-right ${mono ? 'font-mono' : ''}`}>{value ?? '—'}</span>
     </div>
   )
 }

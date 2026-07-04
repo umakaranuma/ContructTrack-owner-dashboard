@@ -4,8 +4,9 @@ import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   PieChart, Pie, Cell, Legend,
 } from 'recharts'
-import { useSite, useDailyLogs, useAttendance, useBills, useProgressPhotos, useSiteAlerts, useAcknowledgeAlert, useResolveAlert, useUpdateSite } from '../hooks/useSites'
+import { useSite, useSiteFinancials, useDailyLogs, useAttendance, useBills, useProgressPhotos, useSiteAlerts, useAcknowledgeAlert, useResolveAlert, useUpdateSite } from '../hooks/useSites'
 import StageStepper from '../components/sites/StageStepper'
+import ContractPanel from '../components/contracts/ContractPanel'
 import BillPhotoGrid from '../components/sites/BillPhotoGrid'
 import ProgressPhotoWall from '../components/sites/ProgressPhotoWall'
 import AddBillModal from '../components/sites/AddBillModal'
@@ -17,7 +18,6 @@ import LoadingSpinner from '../components/ui/LoadingSpinner'
 import DataTable from '../components/ui/DataTable'
 import { stageLabel } from '../constants/stages'
 import { optionLabel, TOMORROW_STATUS_OPTIONS } from '../constants/dailyLogOptions'
-import { DUMMY_SITES } from '../components/overview/SiteGrid'
 
 // ─── SiteDetail Page ───────────────────────────────────────────────────────────
 // Full site detail with tabs: Overview | Daily Logs | Attendance | Bills |
@@ -33,23 +33,8 @@ const TABS = [
   { id: 'alerts',    label: 'Alerts' },
 ]
 
-// Dummy chart data for overview charts until dedicated endpoints exist
-const DUMMY_BUDGET_CHART = [
-  { month: 'Jan', budget: 2000000, actual: 1820000 },
-  { month: 'Feb', budget: 2000000, actual: 2100000 },
-  { month: 'Mar', budget: 2000000, actual: 1950000 },
-  { month: 'Apr', budget: 2000000, actual: 2340000 },
-  { month: 'May', budget: 2000000, actual: 2150000 },
-  { month: 'Jun', budget: 2000000, actual: 4820000 },
-]
-
-const DUMMY_MATERIAL_PIE = [
-  { name: 'Cement',    value: 2400000, color: '#C9A84C' },
-  { name: 'Steel',     value: 1800000, color: '#F0C96B' },
-  { name: 'Sand',      value: 480000,  color: '#7A8BA0' },
-  { name: 'Tiles',     value: 320000,  color: '#1A3356' },
-  { name: 'Others',    value: 220000,  color: '#112240' },
-]
+// Fixed palette cycled across material pie slices
+const PIE_COLORS = ['#C9A84C', '#F0C96B', '#7A8BA0', '#1A3356', '#112240', '#A8893C', '#22C55E', '#F59E0B']
 
 function formatLKR(n) {
   const num = Number(n)
@@ -95,11 +80,25 @@ export default function SiteDetail() {
 
   const acknowledgeAlert = useAcknowledgeAlert(siteId)
   const resolveAlert     = useResolveAlert(siteId)
+  const { data: financials, isLoading: finLoading } = useSiteFinancials(siteId, { enabled: activeTab === 'overview' })
 
-  const site = siteData ?? DUMMY_SITES.find(s => s.id === siteId) ?? DUMMY_SITES[0]
+  const site = siteData ?? {}
   const logs = logsData?.results ?? logsData ?? []
   const attendance = attendanceData?.results ?? attendanceData ?? []
   const alerts = alertsData?.results ?? alertsData ?? []
+
+  if (siteLoading && !siteData) {
+    return <LoadingSpinner label="Loading site…" />
+  }
+
+  if (!siteLoading && !siteData) {
+    return (
+      <div className="text-center py-16">
+        <p className="text-muted mb-4">Site not found.</p>
+        <Link to="/dashboard/sites" className="text-gold text-sm hover:underline">← Back to My Sites</Link>
+      </div>
+    )
+  }
 
   return (
     <div>
@@ -161,12 +160,19 @@ export default function SiteDetail() {
             isUpdating={updateSite.isPending}
           />
 
+          <ContractPanel siteId={siteId} />
+
           <div className="grid grid-cols-2 gap-6">
             {/* Budget vs Actual */}
             <div className="bg-navy-secondary border border-navy-light rounded-xl p-5">
               <h3 className="font-syne font-semibold text-offwhite mb-4">Budget vs Actual Spend</h3>
+              {finLoading ? (
+                <LoadingSpinner label="Loading…" />
+              ) : (financials?.budget_vs_actual ?? []).length === 0 ? (
+                <p className="text-muted text-sm text-center py-16">No spend data yet.</p>
+              ) : (
               <ResponsiveContainer width="100%" height={220}>
-                <BarChart data={DUMMY_BUDGET_CHART} margin={{ top: 0, right: 0, left: 0, bottom: 0 }}>
+                <BarChart data={financials.budget_vs_actual} margin={{ top: 0, right: 0, left: 0, bottom: 0 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#1A3356" vertical={false} />
                   <XAxis dataKey="month" tick={{ fill: '#7A8BA0', fontSize: 11 }} axisLine={false} tickLine={false} />
                   <YAxis tickFormatter={v => `${(v/1000000).toFixed(1)}M`} tick={{ fill: '#7A8BA0', fontSize: 11, fontFamily: 'JetBrains Mono' }} axisLine={false} tickLine={false} width={42} />
@@ -175,15 +181,21 @@ export default function SiteDetail() {
                   <Bar dataKey="actual" name="Actual" fill="#C9A84C" radius={[4,4,0,0]} maxBarSize={24} />
                 </BarChart>
               </ResponsiveContainer>
+              )}
             </div>
 
             {/* Material usage pie */}
             <div className="bg-navy-secondary border border-navy-light rounded-xl p-5">
               <h3 className="font-syne font-semibold text-offwhite mb-4">Material Spend Breakdown</h3>
+              {finLoading ? (
+                <LoadingSpinner label="Loading…" />
+              ) : (financials?.material_breakdown ?? []).length === 0 ? (
+                <p className="text-muted text-sm text-center py-16">No material spend recorded yet.</p>
+              ) : (
               <ResponsiveContainer width="100%" height={220}>
                 <PieChart>
                   <Pie
-                    data={DUMMY_MATERIAL_PIE}
+                    data={financials.material_breakdown}
                     cx="40%"
                     cy="50%"
                     innerRadius={55}
@@ -191,8 +203,8 @@ export default function SiteDetail() {
                     paddingAngle={3}
                     dataKey="value"
                   >
-                    {DUMMY_MATERIAL_PIE.map((entry, i) => (
-                      <Cell key={i} fill={entry.color} stroke="none" />
+                    {financials.material_breakdown.map((entry, i) => (
+                      <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} stroke="none" />
                     ))}
                   </Pie>
                   <Legend
@@ -211,15 +223,16 @@ export default function SiteDetail() {
                   />
                 </PieChart>
               </ResponsiveContainer>
+              )}
             </div>
           </div>
 
-          {/* Labour vs Material split */}
+          {/* Labour vs Material split — real totals from the financials endpoint */}
           <div className="grid grid-cols-3 gap-4">
             {[
-              { label: 'Material Cost', value: 5220000, pct: 72, color: 'gold' },
-              { label: 'Labour Cost',   value: 2040000, pct: 28, color: 'info' },
-              { label: 'Total Budget',  value: 12000000, pct: null, color: 'muted' },
+              { label: 'Material Cost', value: financials?.totals?.material_lkr ?? 0, pct: financials?.totals?.material_pct ?? null, color: 'gold' },
+              { label: 'Labour Cost',   value: financials?.totals?.labour_lkr ?? 0,   pct: financials?.totals?.labour_pct ?? null,   color: 'info' },
+              { label: 'Total Budget',  value: financials?.totals?.budget_lkr ?? site.budget ?? 0, pct: null, color: 'muted' },
             ].map(item => (
               <div key={item.label} className="bg-navy-secondary border border-navy-light rounded-xl p-4">
                 <p className="text-muted text-xs uppercase tracking-wider mb-2">{item.label}</p>

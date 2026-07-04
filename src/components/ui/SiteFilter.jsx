@@ -177,7 +177,7 @@ export default function SiteFilter({
             <button
               type="button"
               onClick={handleClear}
-              className="p-1 rounded text-muted hover:text-off-white hover:bg-white/5 transition-colors"
+              className="p-1 rounded text-muted hover:text-offwhite hover:bg-white/5 transition-colors"
               aria-label="Clear site filter"
             >
               <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -191,7 +191,7 @@ export default function SiteFilter({
               setIsOpen(o => !o)
               if (!isOpen) inputRef.current?.focus()
             }}
-            className="p-1 rounded text-muted hover:text-off-white transition-colors"
+            className="p-1 rounded text-muted hover:text-offwhite transition-colors"
             aria-label="Toggle site list"
           >
             <svg
@@ -230,8 +230,8 @@ export default function SiteFilter({
                     onClick={() => selectOption(site)}
                     className={`px-4 py-2.5 cursor-pointer transition-colors ${
                       isHighlighted || isSelected
-                        ? 'bg-gold/10 text-off-white'
-                        : 'text-off-white hover:bg-white/5'
+                        ? 'bg-gold/10 text-offwhite'
+                        : 'text-offwhite hover:bg-white/5'
                     }`}
                   >
                     <p className={`text-sm ${site.isAll ? 'text-muted' : 'font-medium'}`}>

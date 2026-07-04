@@ -7,16 +7,8 @@ import { formatDistanceToNow } from 'date-fns'
 // Includes ref code, assigned sites, last active, status, and action buttons.
 // ─────────────────────────────────────────────────────────────────────────────
 
-export const DUMMY_MANAGERS = [
-  { id: 'm1', name: 'Rajan Perera',    email: 'rajan.perera@ct.lk',    ref_code: 'MGR-A4F2', sites: ['Colombo Phase 2'],        last_active: new Date(Date.now() - 1000*60*12).toISOString(),  status: 'active' },
-  { id: 'm2', name: 'Sunil Bandara',   email: 'sunil.bandara@ct.lk',   ref_code: 'MGR-B7K1', sites: ['Kandy Residential'],      last_active: new Date(Date.now() - 1000*60*5).toISOString(),   status: 'active' },
-  { id: 'm3', name: 'Nimal Jayasena',  email: 'nimal.j@ct.lk',         ref_code: 'MGR-C3P9', sites: ['Galle Fort Annex'],       last_active: new Date(Date.now() - 1000*60*60*2).toISOString(), status: 'active' },
-  { id: 'm4', name: 'Chamara Silva',   email: 'chamara.s@ct.lk',       ref_code: 'MGR-D1R5', sites: ['Negombo Towers'],         last_active: new Date(Date.now() - 1000*60*30).toISOString(),  status: 'active' },
-  { id: 'm5', name: 'Kasun Fernando',  email: 'kasun.f@ct.lk',         ref_code: 'MGR-E8T2', sites: [],                         last_active: new Date(Date.now() - 1000*60*60*48).toISOString(), status: 'inactive' },
-]
-
 export default function ManagerTable({ managers, isLoading, onView, onViewDetail }) {
-  const data = managers ?? DUMMY_MANAGERS
+  const data = managers ?? []
   // Support both onView (Managers.jsx) and onViewDetail (legacy) prop names
   const handleView = onView ?? onViewDetail
 

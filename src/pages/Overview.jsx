@@ -8,15 +8,14 @@ import { useOverviewStats, useActivityFeed, useSites } from '../hooks/useSites'
 // Main dashboard: 4 KPI metric cards, site status grid, and activity feed.
 // ─────────────────────────────────────────────────────────────────────────────
 
-// Dummy stats while API is not connected
-const DUMMY_STATS = {
-  active_sites:       4,
-  max_sites:          10,
-  total_spend_month:  9010000,
-  workers_on_site:    99,
-  open_alerts:        3,
-  spend_vs_last_month: '+8.4%',
-  spend_up:           true,
+const EMPTY_STATS = {
+  active_sites:        0,
+  max_sites:           0,
+  total_spend_month:   0,
+  workers_on_site:     0,
+  open_alerts:         0,
+  spend_vs_last_month: null,
+  spend_up:            false,
 }
 
 export default function Overview() {
@@ -24,8 +23,8 @@ export default function Overview() {
   const { data: activity, isLoading: activityLoading }   = useActivityFeed(20)
   const { data: sitesData, isLoading: sitesLoading }     = useSites()
 
-  const s     = stats ?? DUMMY_STATS
-  const sites = sitesData?.results ?? sitesData ?? null
+  const s     = stats ?? EMPTY_STATS
+  const sites = sitesData?.results ?? (Array.isArray(sitesData) ? sitesData : [])
 
   function formatLKR(n) {
     if (n >= 1000000) return (n / 1000000).toFixed(2) + 'M'

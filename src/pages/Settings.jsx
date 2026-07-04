@@ -4,6 +4,7 @@
  * Notifications, Security.
  */
 import { useState } from 'react'
+import { useQuery } from '@tanstack/react-query'
 import useAuthStore from '../store/authStore'
 import api from '../services/api'
 
@@ -35,7 +36,7 @@ export default function Settings() {
                 className={`w-full text-left px-4 py-2.5 rounded-lg text-sm flex items-center gap-3 transition-colors ${
                   activeTab === t.id
                     ? 'bg-gold/10 text-gold font-medium'
-                    : 'text-muted hover:bg-white/5 hover:text-off-white'
+                    : 'text-muted hover:bg-white/5 hover:text-offwhite'
                 }`}
               >
                 <span>{t.icon}</span>
@@ -173,10 +174,18 @@ function BillingTab() {
   const { user } = useAuthStore()
   const pkg = user?.tenant?.package ?? {}
 
-  const payments = [
-    { id: 1, date: '2025-01-01', amount: 50000, method: 'PayHere', status: 'success', ref: 'PH-2025-001234' },
-    { id: 2, date: '2025-03-01', amount: 20000, method: 'Bank Transfer', status: 'success', ref: 'BOC-8871' },
-  ]
+  const { data: paymentData, isLoading: paymentsLoading } = useQuery({
+    queryKey: ['payment-history'],
+    queryFn: () => api.get('/api/payments/history/').then(r => r.data.result),
+  })
+  const payments = (Array.isArray(paymentData) ? paymentData : []).map(p => ({
+    id:     p.id,
+    date:   p.payment_date ?? (p.created_at ?? '').split('T')[0],
+    amount: Number(p.amount_lkr ?? 0),
+    method: { payhere: 'PayHere', webxpay: 'Webxpay', bank_transfer: 'Bank Transfer', manual: 'Manual' }[p.method] ?? p.method,
+    status: p.status,
+    ref:    p.gateway_ref ?? '—',
+  }))
 
   return (
     <div className="space-y-6">
@@ -185,8 +194,8 @@ function BillingTab() {
         <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
           <div>
             <p className="text-muted text-xs uppercase tracking-widest mb-1">Current Plan</p>
-            <h3 className="text-xl font-bold text-gold capitalize">{pkg.name ?? 'Pro'}</h3>
-            <p className="text-muted text-sm mt-1">LKR {Number(pkg.price_lkr ?? 20000).toLocaleString()} / month</p>
+            <h3 className="text-xl font-bold text-gold capitalize">{pkg.name ?? '—'}</h3>
+            <p className="text-muted text-sm mt-1">LKR {Number(pkg.price_lkr ?? 0).toLocaleString()} / month</p>
           </div>
           <button className="btn-outline text-sm self-start">Upgrade Plan</button>
         </div>
@@ -194,24 +203,29 @@ function BillingTab() {
         <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 gap-5">
           <UsageBar
             label="Sites"
-            used={user?.tenant?.sites_count ?? 2}
-            max={pkg.max_sites === -1 ? '∞' : pkg.max_sites ?? 6}
+            used={user?.tenant?.sites_count ?? 0}
+            max={pkg.max_sites === -1 ? '∞' : pkg.max_sites ?? 0}
           />
           <UsageBar
             label="Managers"
-            used={user?.tenant?.managers_count ?? 2}
-            max={pkg.max_managers === -1 ? '∞' : pkg.max_managers ?? 6}
+            used={user?.tenant?.managers_count ?? 0}
+            max={pkg.max_managers === -1 ? '∞' : pkg.max_managers ?? 0}
           />
         </div>
 
         <p className="mt-5 pt-4 border-t border-white/5 text-muted text-sm">
-          Renews: <span className="text-off-white">{user?.tenant?.subscription_end ?? '2025-12-31'}</span>
+          Renews: <span className="text-offwhite">{user?.tenant?.subscription_end ?? '—'}</span>
         </p>
       </div>
 
       {/* Payment history */}
       <div className="card border border-white/5 p-5">
         <h2 className="section-title mb-5">Payment History</h2>
+        {paymentsLoading ? (
+          <p className="text-muted text-sm text-center py-6">Loading payment history…</p>
+        ) : payments.length === 0 ? (
+          <p className="text-muted text-sm text-center py-6">No payments recorded yet.</p>
+        ) : (
         <div className="overflow-x-auto -mx-1">
           <table className="w-full text-sm">
             <thead>
@@ -226,10 +240,10 @@ function BillingTab() {
             <tbody>
               {payments.map(p => (
                 <tr key={p.id} className="border-b border-white/5 hover:bg-white/2 transition-colors">
-                  <td className="px-4 py-3 font-mono text-off-white">{p.date}</td>
-                  <td className="px-4 py-3 text-off-white">{p.method}</td>
+                  <td className="px-4 py-3 font-mono text-offwhite">{p.date}</td>
+                  <td className="px-4 py-3 text-offwhite">{p.method}</td>
                   <td className="px-4 py-3 font-mono text-muted text-xs">{p.ref}</td>
-                  <td className="px-4 py-3 text-right font-mono text-off-white">LKR {p.amount.toLocaleString()}</td>
+                  <td className="px-4 py-3 text-right font-mono text-offwhite">LKR {p.amount.toLocaleString()}</td>
                   <td className="px-4 py-3 text-right">
                     <span className={`text-xs px-2 py-0.5 rounded-full ${
                       p.status === 'success' ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'
@@ -242,13 +256,14 @@ function BillingTab() {
             </tbody>
           </table>
         </div>
+        )}
       </div>
     </div>
   )
 }
 
 function UsageBar({ label, used, max }) {
-  const pct = max === '∞' ? 30 : Math.min(100, Math.round((used / max) * 100))
+  const pct = max === '∞' ? 30 : max > 0 ? Math.min(100, Math.round((used / max) * 100)) : 0
   const color = pct >= 90 ? 'bg-red-500' : pct >= 70 ? 'bg-amber-500' : 'bg-gold'
   return (
     <div>
@@ -291,7 +306,7 @@ function NotificationsTab() {
         >
           <div className={`absolute top-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform ${prefs[id] ? 'translate-x-5' : 'translate-x-0.5'}`} />
         </div>
-        <span className="text-off-white text-sm">{label}</span>
+        <span className="text-offwhite text-sm">{label}</span>
       </label>
     )
   }
@@ -327,7 +342,7 @@ function NotificationsTab() {
               onChange={() => setPrefs(p => ({ ...p, email_digest: opt }))}
               className="accent-gold"
             />
-            <span className="text-off-white text-sm capitalize">{opt}</span>
+            <span className="text-offwhite text-sm capitalize">{opt}</span>
           </label>
         ))}
       </div>
@@ -419,7 +434,7 @@ function SecurityTab() {
           ].map((s, i) => (
             <div key={i} className="flex items-center justify-between gap-4 py-4 first:pt-0 last:pb-0">
               <div className="min-w-0">
-                <p className="text-off-white text-sm font-medium">
+                <p className="text-offwhite text-sm font-medium">
                   {s.device}
                   {s.current && <span className="text-xs text-green-400 ml-2">• This session</span>}
                 </p>

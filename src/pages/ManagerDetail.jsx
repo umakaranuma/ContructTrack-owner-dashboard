@@ -30,7 +30,7 @@ function StatCard({ label, value }) {
   return (
     <div className="card border border-white/5 p-4">
       <p className="text-muted text-xs uppercase tracking-wider mb-1">{label}</p>
-      <p className="font-mono font-bold text-xl text-off-white">{value}</p>
+      <p className="font-mono font-bold text-xl text-offwhite">{value}</p>
     </div>
   )
 }
@@ -39,7 +39,7 @@ function DetailRow({ label, value, mono }) {
   return (
     <div className="flex justify-between gap-4 py-3 border-b border-white/5 last:border-0">
       <span className="text-muted text-sm">{label}</span>
-      <span className={`text-off-white text-sm text-right ${mono ? 'font-mono' : ''}`}>{value ?? '—'}</span>
+      <span className={`text-offwhite text-sm text-right ${mono ? 'font-mono' : ''}`}>{value ?? '—'}</span>
     </div>
   )
 }
@@ -119,7 +119,7 @@ export default function ManagerDetail() {
       label: 'Site',
       render: (v, row) => (
         <div>
-          <p className="text-off-white font-medium text-sm">{v}</p>
+          <p className="text-offwhite font-medium text-sm">{v}</p>
           <p className="text-muted text-xs mt-0.5">{row.location || '—'}</p>
         </div>
       ),
@@ -207,7 +207,7 @@ export default function ManagerDetail() {
 
         <div className="text-right text-sm">
           <p className="text-muted text-xs uppercase tracking-wider">Last active</p>
-          <p className="font-mono text-off-white mt-1">
+          <p className="font-mono text-offwhite mt-1">
             {manager?.last_active
               ? formatDistanceToNow(new Date(manager.last_active), { addSuffix: true })
               : '—'}
@@ -224,7 +224,7 @@ export default function ManagerDetail() {
             className={`px-4 py-3 text-sm font-medium whitespace-nowrap border-b-2 -mb-px transition-colors ${
               activeTab === tab.id
                 ? 'border-gold text-gold'
-                : 'border-transparent text-muted hover:text-off-white'
+                : 'border-transparent text-muted hover:text-offwhite'
             }`}
           >
             {tab.label}
@@ -267,15 +267,15 @@ export default function ManagerDetail() {
               <h2 className="section-title mb-4">Experience Summary</h2>
               <p className="text-muted text-sm leading-relaxed mb-4">
                 {name} has been on ConstructTrack for{' '}
-                <span className="text-off-white font-medium">{exp.days_as_manager ?? 0} days</span>
+                <span className="text-offwhite font-medium">{exp.days_as_manager ?? 0} days</span>
                 {', managing '}
-                <span className="text-off-white font-medium">{exp.total_sites ?? sites.length} site(s)</span>
+                <span className="text-offwhite font-medium">{exp.total_sites ?? sites.length} site(s)</span>
                 {' with '}
-                <span className="text-off-white font-medium">{exp.total_progress_logs ?? 0} daily logs</span>
+                <span className="text-offwhite font-medium">{exp.total_progress_logs ?? 0} daily logs</span>
                 {', '}
-                <span className="text-off-white font-medium">{exp.total_bills_logged ?? 0} bills</span>
+                <span className="text-offwhite font-medium">{exp.total_bills_logged ?? 0} bills</span>
                 {', and '}
-                <span className="text-off-white font-medium">{exp.total_attendance_submissions ?? 0} attendance submissions</span>
+                <span className="text-offwhite font-medium">{exp.total_attendance_submissions ?? 0} attendance submissions</span>
                 {' across your account.'}
               </p>
               {sites.length > 0 && (
@@ -287,7 +287,7 @@ export default function ManagerDetail() {
                       to={`/dashboard/sites/${site.id}`}
                       className="flex items-center justify-between px-3 py-2 rounded-lg border border-white/5 bg-navy-primary/40 hover:border-gold/30 transition-colors"
                     >
-                      <span className="text-off-white text-sm">{site.name}</span>
+                      <span className="text-offwhite text-sm">{site.name}</span>
                       <span className="text-muted text-xs">{stageLabel(site.stage)}</span>
                     </Link>
                   ))}
@@ -347,7 +347,7 @@ export default function ManagerDetail() {
                 >
                   <span className="text-lg mt-0.5 flex-shrink-0">{ACTIVITY_ICONS[entry.type] ?? '•'}</span>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm text-off-white">{entry.description}</p>
+                    <p className="text-sm text-offwhite">{entry.description}</p>
                     <p className="text-muted text-xs mt-0.5">
                       {entry.site_name}
                       {entry.site_id && (
